@@ -4,6 +4,7 @@
 
 Afin de faciliter la gestion de projet, la documentation client et interne, et d'autres documents, nous avons adopter le
 format markdown. Ce choix s'est fait car :
+
 - c'est un format permettant l'accès au contenu sans aucun logiciel spécial (un simple éditeur suffit)
 - il est supporté dans de nombreux outils
 - il minimise le stockage
@@ -71,10 +72,13 @@ Bien que fonctionnelle, la solution actuelle présente des problèmes :
 
 ## Solution souhaitée
 
-### Fonctionnelle
 La solution souhaitée serait un outil unique, `md2pdf`, proposant une solution de conversion de markdown en PDF unique.
 
-Pour ce faire, nous envisageons d'utiliser extensivement la notation `front matter` afin de décrire différents éléments
+### Fonctionnelle
+
+#### Fonction principale
+
+Nous envisageons d'utiliser extensivement la notation `front matter` afin de décrire différents éléments
 du fichier final souhaité :
 
 - Titre du document : utilisé dans les meta du PDF ?
@@ -116,10 +120,28 @@ qui change de nom ou de logo).
 Tous ces éléments sont optionnels : en l'absence de front matter, la génération doit quand même se faire avec des
 valeurs par défaut neutre.
 
+#### Fonctions secondaires
+
+Via des options, la solution obtenue devrait permettre de fournir des outils facilitant la manipulation de fichier PDF ou
+markdown :
+- compresser des PDF
+- fusionner des PDF
+- ...
+
+et autres fonctions implémentées dans les solutions manuelles précédentes
+
 ### Technique
 
 Dans l'idéal, l'outil devrait se composer d'un programme en ligne de commande, ainsi que d'un fichier de configuration
 (emplacement des binaires nécessaire pour le latex ou le pdf, etc...).
+
+Les contraintes techniques sont :
+- la portabilité : doit fonctionner sur toutes les plateforme (Windows, Linux, MacOS)
+- la simplicité : l'installation et l'utilisation doivent être simplifié au maximum
+- la maintenabilité : préféré une structure simple, avec un deboggage facile
+- fonctionnement en ligne de commande
+
+Le choix du langage permettant de répondre à ces exigences n'a pas encore été fait.
 
 Il devrait pouvoir prendre en paramètre un fichier.
 En paramètre optionnel le fichier de sorti, par défaut dans le même emplacement que le markdown source, avec le même nom
