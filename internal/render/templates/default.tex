@@ -1,0 +1,50 @@
+\documentclass[11pt]{article}
+\usepackage{ifxetex,ifluatex}
+\ifxetex
+  \usepackage{fontspec}
+\else
+  \ifluatex
+    \usepackage{fontspec}
+  \else
+    \usepackage[T1]{fontenc}
+    \usepackage[utf8]{inputenc}
+  \fi
+\fi
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{longtable,booktabs}
+\geometry{margin=2.5cm}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue}
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+$if(title)$
+\title{$title$}
+$endif$
+$if(author)$
+\author{$for(author)$$author$$sep$ \\ $endfor$}
+$endif$
+$if(date)$
+\date{$date$}
+$else$
+\date{}
+$endif$
+
+\begin{document}
+$if(title)$
+\maketitle
+$endif$
+$if(toc)$
+{
+$if(toc-title)$
+\renewcommand{\contentsname}{$toc-title$}
+$endif$
+\tableofcontents
+}
+\newpage
+$endif$
+
+$body$
+\end{document}
