@@ -36,3 +36,13 @@ The compression command requires Ghostscript (`gs`). Install it and retry.
 ## Unexpected output path
 
 By default, output is `<input-basename>.pdf` next to the input markdown file. Use `-o` to force a custom output path.
+
+## Images overflow pages in custom templates
+
+If you use a custom `pdf.template`, make sure it includes a global image policy such as:
+
+```tex
+\setkeys{Gin}{width=\linewidth,height=0.8\textheight,keepaspectratio}
+```
+
+The embedded default template already applies this safeguard.

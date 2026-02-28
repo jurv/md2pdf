@@ -1,24 +1,140 @@
-\documentclass[11pt]{article}
+\documentclass[11pt,a4paper]{article}
+
 \usepackage{ifxetex,ifluatex}
 \ifxetex
   \usepackage{fontspec}
+  \setmainfont{Open Sans}
+  \setmonofont{DejaVu Sans Mono}[Scale=MatchLowercase]
 \else
   \ifluatex
     \usepackage{fontspec}
+    \setmainfont{Open Sans}
+    \setmonofont{DejaVu Sans Mono}[Scale=MatchLowercase]
   \else
     \usepackage[T1]{fontenc}
     \usepackage[utf8]{inputenc}
+    \usepackage{lmodern}
   \fi
 \fi
+
 \usepackage{geometry}
+\usepackage{xurl}
 \usepackage{hyperref}
 \usepackage{xcolor}
 \usepackage{graphicx}
-\usepackage{longtable,booktabs}
+\usepackage{float}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{calc}
+\usepackage{microtype}
+\usepackage{enumitem}
+\usepackage{framed}
+\usepackage{fvextra}
+\usepackage{newunicodechar}
+\usepackage[font=small, labelfont={bf}]{caption}
+
 \geometry{margin=2.5cm}
 \hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue}
-\providecommand{\tightlist}{%
-  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.6em}
+\emergencystretch=2em
+
+% Global image safety defaults to prevent page overflow.
+\setkeys{Gin}{width=\linewidth,height=0.8\textheight,keepaspectratio}
+
+% Stable list spacing and Pandoc compact-list fallback.
+\setlist{itemsep=0.25em,topsep=0.25em,parsep=0em,partopsep=0em}
+\providecommand{\tightlist}{\setlength{\itemsep}{0.25em}\setlength{\parskip}{0em}}
+
+% Pandoc table width helper.
+\providecommand{\real}[1]{#1}
+
+% Shaded environment for Pandoc code blocks.
+\definecolor{shadecolor}{RGB}{245,245,245}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+
+% Code blocks: wrap long lines and keep line numbers visible.
+\definecolor{codenumbers}{gray}{0.70}
+\fvset{
+  breaklines=true,
+  breakanywhere=true,
+  tabsize=2,
+  obeytabs=true,
+  numbers=left,
+  numbersep=6pt,
+  fontsize=\small,
+  breaksymbol={},
+  breaksymbolleft={},
+  breaksymbolright={},
+  breaksymbolsep=0pt,
+  breakindent=0pt,
+}
+\renewcommand{\theFancyVerbLine}{\textcolor{codenumbers}{\footnotesize\arabic{FancyVerbLine}}}
+
+$if(highlighting-macros)$
+$highlighting-macros$
+$endif$
+
+\makeatletter
+\@ifundefined{Highlighting}{%
+  \DefineVerbatimEnvironment{Highlighting}{Verbatim}{
+    breaklines=true,
+    breakanywhere=true,
+    tabsize=2,
+    obeytabs=true,
+    numbers=left,
+    numbersep=6pt,
+    fontsize=\small,
+    breaksymbol={},
+    breaksymbolleft={},
+    breaksymbolright={},
+    breaksymbolsep=0pt,
+    breakindent=0pt,
+    commandchars=\\\{\},
+  }
+}{%
+  \RecustomVerbatimEnvironment{Highlighting}{Verbatim}{
+    breaklines=true,
+    breakanywhere=true,
+    tabsize=2,
+    obeytabs=true,
+    numbers=left,
+    numbersep=6pt,
+    fontsize=\small,
+    breaksymbol={},
+    breaksymbolleft={},
+    breaksymbolright={},
+    breaksymbolsep=0pt,
+    breakindent=0pt,
+    commandchars=\\\{\},
+  }
+}
+\RecustomVerbatimEnvironment{Verbatim}{Verbatim}{
+  breaklines=true,
+  breakanywhere=true,
+  tabsize=2,
+  obeytabs=true,
+  numbers=left,
+  numbersep=6pt,
+  fontsize=\small,
+}
+\makeatother
+
+% Keep figures close to source location to reduce surprise moves.
+\let\origfigure\figure
+\let\endorigfigure\endfigure
+\renewenvironment{figure}[1][]{\origfigure[H]}{\endorigfigure}
+
+% Common Unicode fallbacks for robust PDF generation.
+\newunicodechar{‑}{\mbox{-}}
+\newunicodechar{’}{'}
+\newunicodechar{“}{"}
+\newunicodechar{”}{"}
+\newunicodechar{→}{\ensuremath{\rightarrow}}
+\newunicodechar{↔}{\ensuremath{\leftrightarrow}}
+\newunicodechar{•}{\textbullet}
+\newunicodechar{⚠}{\textbf{!}}
 
 $if(title)$
 \title{$title$}
@@ -33,8 +149,85 @@ $else$
 $endif$
 
 \begin{document}
+% Disable LaTeX-native section numbering: numbering is controlled in markdown preprocessing.
+\setcounter{secnumdepth}{-\maxdimen}
+\pagenumbering{arabic}
+$if(cover_mode_external)$
+\input{$cover_external_template$}
+\clearpage
+$endif$
+$if(cover_mode_builtin)$
+\begin{titlepage}
+\centering
+$if(cover_background_color_value)$
+$if(cover_background_color_model)$
+\pagecolor[$cover_background_color_model$]{$cover_background_color_value$}
+$else$
+\pagecolor{$cover_background_color_value$}
+$endif$
+$endif$
+$if(cover_align_top)$
+\vspace*{1.5cm}
+$else$
+\vspace*{\fill}
+$endif$
+$if(cover_logo)$
+\includegraphics[width=0.38\linewidth,height=0.24\textheight,keepaspectratio]{$cover_logo$}
+\par\vspace{1.2cm}
+$endif$
+\begingroup
+\LARGE\bfseries
+$if(title)$
+$if(cover_title_color_value)$
+$if(cover_title_color_model)$
+\textcolor[$cover_title_color_model$]{$cover_title_color_value$}{$title$}
+$else$
+\textcolor{$cover_title_color_value$}{$title$}
+$endif$
+$else$
+$title$
+$endif$
+$endif$
+\par
+\endgroup
+$if(cover_subtitle)$
+\vspace{0.8cm}
+{\Large $cover_subtitle$\par}
+$endif$
+\vfill
+$if(author)$
+{\large $for(author)$$author$$sep$ \\ $endfor$\par}
+$endif$
+$if(date)$
+{\large $date$\par}
+$endif$
+\end{titlepage}
+$if(cover_background_color_value)$
+\nopagecolor
+$endif$
+$endif$
+$if(title_render_separate_page)$
+$if(title)$
+\begin{titlepage}
+\centering
+\vspace*{\fill}
+{\Huge\bfseries $title$\par}
+$if(author)$
+\vspace{1cm}
+{\Large $for(author)$$author$$sep$ \\ $endfor$\par}
+$endif$
+$if(date)$
+\vspace{0.5cm}
+{\large $date$\par}
+$endif$
+\vspace*{\fill}
+\end{titlepage}
+$endif$
+$endif$
+$if(title_render_inline)$
 $if(title)$
 \maketitle
+$endif$
 $endif$
 $if(toc)$
 {

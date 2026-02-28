@@ -3,6 +3,7 @@ package deps
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -106,6 +107,9 @@ func inspectCommand(name string, required bool, versionArg []string, probeVersio
 
 func commandVersion(cmdName string, args ...string) (string, error) {
 	cmd := exec.Command(cmdName, args...)
+	if cmdName == "plantuml" {
+		cmd.Env = withHeadlessJavaEnv(os.Environ())
+	}
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -129,4 +133,29 @@ func commandVersion(cmdName string, args ...string) (string, error) {
 		}
 	}
 	return "", nil
+}
+
+func withHeadlessJavaEnv(base []string) []string {
+	out := make([]string, 0, len(base)+1)
+	found := false
+	for _, item := range base {
+		if strings.HasPrefix(item, "JAVA_TOOL_OPTIONS=") {
+			found = true
+			current := strings.TrimPrefix(item, "JAVA_TOOL_OPTIONS=")
+			if !strings.Contains(current, "-Djava.awt.headless=true") {
+				if strings.TrimSpace(current) == "" {
+					current = "-Djava.awt.headless=true"
+				} else {
+					current = current + " -Djava.awt.headless=true"
+				}
+			}
+			out = append(out, "JAVA_TOOL_OPTIONS="+current)
+			continue
+		}
+		out = append(out, item)
+	}
+	if !found {
+		out = append(out, "JAVA_TOOL_OPTIONS=-Djava.awt.headless=true")
+	}
+	return out
 }

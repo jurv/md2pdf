@@ -33,6 +33,7 @@ func Load(opts LoadOptions) (Config, error) {
 		if err != nil {
 			return Config{}, fmt.Errorf("failed to load global config %q: %w", globalPath, err)
 		}
+		applyCompatibilityAliases(cfgMap)
 		merged = MergeMap(merged, cfgMap)
 	}
 	if projectPath != "" {
@@ -40,14 +41,20 @@ func Load(opts LoadOptions) (Config, error) {
 		if err != nil {
 			return Config{}, fmt.Errorf("failed to load project config %q: %w", projectPath, err)
 		}
+		applyCompatibilityAliases(cfgMap)
 		merged = MergeMap(merged, cfgMap)
 	}
 	if len(opts.FrontMatter) > 0 {
-		merged = MergeMap(merged, NormalizeMap(opts.FrontMatter))
+		fm := NormalizeMap(opts.FrontMatter)
+		applyCompatibilityAliases(fm)
+		merged = MergeMap(merged, fm)
 	}
 	if len(opts.Overrides) > 0 {
-		merged = MergeMap(merged, NormalizeMap(opts.Overrides))
+		ov := NormalizeMap(opts.Overrides)
+		applyCompatibilityAliases(ov)
+		merged = MergeMap(merged, ov)
 	}
+	applyCompatibilityAliases(merged)
 
 	blob, err := yaml.Marshal(merged)
 	if err != nil {
@@ -63,6 +70,28 @@ func Load(opts LoadOptions) (Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func applyCompatibilityAliases(merged map[string]any) {
+	tocAny, ok := merged["toc"]
+	if !ok {
+		return
+	}
+	tocMap, ok := tocAny.(map[string]any)
+	if !ok {
+		return
+	}
+
+	if _, hasToLevel := tocMap["to_level"]; !hasToLevel {
+		if depth, ok := tocMap["depth"]; ok {
+			tocMap["to_level"] = depth
+		}
+	}
+	if _, hasDepth := tocMap["depth"]; !hasDepth {
+		if toLevel, ok := tocMap["to_level"]; ok {
+			tocMap["depth"] = toLevel
+		}
+	}
 }
 
 func LoadMap(path string) (map[string]any, error) {

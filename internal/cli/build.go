@@ -91,17 +91,38 @@ func runBuild(ctx context.Context, global *GlobalOptions, cmd *cobra.Command, fl
 	if err != nil {
 		return userError("configuration error", err)
 	}
+	if cfg.Heading.MirrorInTOC {
+		cfg.TOC.FromLevel = cfg.Heading.FromLevel
+		cfg.TOC.ToLevel = cfg.Heading.ToLevel
+		cfg.TOC.Depth = cfg.TOC.ToLevel
+	}
+	if err := render.ValidateHeadingCompatibility(cfg); err != nil {
+		return userError("invalid heading configuration", err)
+	}
 
 	sources, err := fs.ResolveSources(inputPath, cfg.Sources)
 	if err != nil {
 		return userError("failed to resolve markdown sources", err)
 	}
 
+	entryBody := inputBody
+	if cfg.Title.Source == "entrypoint_h1" {
+		extractedTitle, stripped, found := render.ExtractFirstH1(inputBody, cfg.Title.StripFromBody)
+		if found {
+			if cfg.Metadata.Title == "" {
+				cfg.Metadata.Title = extractedTitle
+			}
+			if cfg.Title.StripFromBody {
+				entryBody = stripped
+			}
+		}
+	}
+
 	chunks := make([][]byte, 0, len(sources))
 	for _, source := range sources {
 		var chunk []byte
 		if source == inputPath {
-			chunk = inputBody
+			chunk = entryBody
 		} else {
 			blob, readErr := os.ReadFile(source)
 			if readErr != nil {
@@ -122,8 +143,12 @@ func runBuild(ctx context.Context, global *GlobalOptions, cmd *cobra.Command, fl
 	if len(merged) == 0 {
 		return userError("empty markdown", fmt.Errorf("resolved sources produced no markdown content"))
 	}
+	merged, err = render.ApplyHeadingPolicy(merged, cfg)
+	if err != nil {
+		return userError("failed to apply heading policy", err)
+	}
 
-	enableTOC := render.ShouldEnableTOC(cfg.TOC.Mode, merged)
+	enableTOC := render.ShouldEnableTOC(cfg.TOC.Mode, merged, cfg.TOC.FromLevel, cfg.TOC.ToLevel)
 	enablePlantUML := shouldEnablePlantUML(cfg.Features.PlantUML, merged)
 
 	if err := deps.EnsureBuildDependencies(cfg.PDF.Engine, enablePlantUML); err != nil {

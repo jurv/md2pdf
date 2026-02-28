@@ -6,10 +6,12 @@
 
 - Build PDF files from single or multi-source Markdown inputs.
 - Merge configuration from global, project, and document front matter.
-- Control PDF engine, template, table of contents, metadata, and assets.
+- Control PDF engine, template, title extraction, heading numbering, table of contents, metadata, and assets.
 - Render PlantUML blocks when the required toolchain is available.
 - Run dependency diagnostics with `doctor`.
 - Merge and compress existing PDF files.
+- Apply safe default rendering guards (image auto-fit, code wrapping, and Unicode fallbacks).
+- Add an optional builtin or external-template cover page.
 
 ## Prerequisites
 
