@@ -55,6 +55,9 @@ func Load(opts LoadOptions) (Config, error) {
 		merged = MergeMap(merged, ov)
 	}
 	applyCompatibilityAliases(merged)
+	if err := validateDeprecatedKeys(merged); err != nil {
+		return Config{}, err
+	}
 
 	blob, err := yaml.Marshal(merged)
 	if err != nil {
@@ -92,6 +95,24 @@ func applyCompatibilityAliases(merged map[string]any) {
 			tocMap["depth"] = toLevel
 		}
 	}
+}
+
+func validateDeprecatedKeys(merged map[string]any) error {
+	hfAny, ok := merged["header_footer"]
+	if !ok {
+		return nil
+	}
+	hfMap, ok := hfAny.(map[string]any)
+	if !ok {
+		return nil
+	}
+	deprecated := []string{"header_left", "header_right", "footer_left", "footer_right"}
+	for _, key := range deprecated {
+		if _, exists := hfMap[key]; exists {
+			return fmt.Errorf("deprecated key header_footer.%s detected; migrate to header_footer.header.grid.cells / header_footer.footer.grid.cells", key)
+		}
+	}
+	return nil
 }
 
 func LoadMap(path string) (map[string]any, error) {

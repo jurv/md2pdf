@@ -2,6 +2,8 @@ package config
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -96,10 +98,64 @@ type FontsConfig struct {
 }
 
 type HeaderFooterConfig struct {
-	HeaderLeft  string `yaml:"header_left"`
-	HeaderRight string `yaml:"header_right"`
-	FooterLeft  string `yaml:"footer_left"`
-	FooterRight string `yaml:"footer_right"`
+	Enabled              bool               `yaml:"enabled"`
+	ApplyOn              string             `yaml:"apply_on"`
+	SideOffsetLeftPt     float64            `yaml:"side_offset_left_pt"`
+	SideOffsetRightPt    float64            `yaml:"side_offset_right_pt"`
+	FooterReserveAbovePt float64            `yaml:"footer_reserve_above_pt"`
+	PageNumber           PageNumberConfig   `yaml:"page_number"`
+	GlobalStyle          TextStyleConfig    `yaml:"global_style"`
+	Header               HeaderFooterRegion `yaml:"header"`
+	Footer               HeaderFooterRegion `yaml:"footer"`
+}
+
+type PageNumberConfig struct {
+	Enabled    bool   `yaml:"enabled"`
+	Format     string `yaml:"format"`
+	TotalPages bool   `yaml:"total_pages"`
+}
+
+type TextStyleConfig struct {
+	Font         string  `yaml:"font"`
+	Color        string  `yaml:"color"`
+	SizePt       float64 `yaml:"size_pt"`
+	LineHeightPt float64 `yaml:"line_height_pt"`
+	Opacity      float64 `yaml:"opacity"`
+	Weight       string  `yaml:"weight"`
+}
+
+type HeaderFooterRegion struct {
+	HeightPt float64          `yaml:"height_pt"`
+	SepPt    float64          `yaml:"sep_pt"`
+	SkipPt   float64          `yaml:"skip_pt"`
+	RaisePt  float64          `yaml:"raise_pt"`
+	Grid     HeaderFooterGrid `yaml:"grid"`
+}
+
+type HeaderFooterGrid struct {
+	Columns []float64          `yaml:"columns"`
+	Rows    []float64          `yaml:"rows"`
+	Cells   []HeaderFooterCell `yaml:"cells"`
+}
+
+type HeaderFooterCell struct {
+	Row     int                 `yaml:"row"`
+	Col     int                 `yaml:"col"`
+	RowSpan int                 `yaml:"row_span"`
+	ColSpan int                 `yaml:"col_span"`
+	AlignH  string              `yaml:"align_h"`
+	AlignV  string              `yaml:"align_v"`
+	Blocks  []HeaderFooterBlock `yaml:"blocks"`
+}
+
+type HeaderFooterBlock struct {
+	Type     string          `yaml:"type"`
+	Value    string          `yaml:"value"`
+	Path     string          `yaml:"path"`
+	Format   string          `yaml:"format"`
+	WidthPt  float64         `yaml:"width_pt"`
+	HeightPt float64         `yaml:"height_pt"`
+	Style    TextStyleConfig `yaml:"style"`
 }
 
 type FeaturesConfig struct {
@@ -141,6 +197,42 @@ func Default() Config {
 				TitleColor:      "#000000",
 				BackgroundColor: "#FFFFFF",
 				Align:           "center",
+			},
+		},
+		HeaderFooter: HeaderFooterConfig{
+			Enabled:              false,
+			ApplyOn:              "toc_and_body",
+			SideOffsetLeftPt:     20,
+			SideOffsetRightPt:    20,
+			FooterReserveAbovePt: 0,
+			PageNumber: PageNumberConfig{
+				Enabled:    true,
+				Format:     "{page}",
+				TotalPages: false,
+			},
+			GlobalStyle: TextStyleConfig{
+				Color:        "#E0E0E0",
+				SizePt:       7,
+				LineHeightPt: 8,
+				Opacity:      1,
+				Weight:       "normal",
+			},
+			Header: HeaderFooterRegion{
+				HeightPt: 36,
+				SepPt:    22,
+				RaisePt:  4,
+				Grid: HeaderFooterGrid{
+					Columns: []float64{0.38, 0.62},
+					Rows:    []float64{1},
+				},
+			},
+			Footer: HeaderFooterRegion{
+				SkipPt:  24,
+				RaisePt: 0,
+				Grid: HeaderFooterGrid{
+					Columns: []float64{0.92, 0.08},
+					Rows:    []float64{1},
+				},
 			},
 		},
 		Features: FeaturesConfig{
@@ -225,6 +317,40 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("invalid cover.builtin.align %q (allowed: center, top)", c.Cover.Builtin.Align)
 	}
 
+	switch c.HeaderFooter.ApplyOn {
+	case "body_only", "toc_and_body", "all_pages":
+	default:
+		return fmt.Errorf("invalid header_footer.apply_on %q (allowed: body_only, toc_and_body, all_pages)", c.HeaderFooter.ApplyOn)
+	}
+	if c.HeaderFooter.SideOffsetLeftPt < 0 {
+		return fmt.Errorf("header_footer.side_offset_left_pt must be >= 0")
+	}
+	if c.HeaderFooter.SideOffsetRightPt < 0 {
+		return fmt.Errorf("header_footer.side_offset_right_pt must be >= 0")
+	}
+	if c.HeaderFooter.FooterReserveAbovePt < 0 {
+		return fmt.Errorf("header_footer.footer_reserve_above_pt must be >= 0")
+	}
+	if !c.HeaderFooter.Enabled {
+		if len(c.HeaderFooter.Header.Grid.Cells) > 0 || len(c.HeaderFooter.Footer.Grid.Cells) > 0 {
+			return fmt.Errorf("header_footer.enabled must be true when header/footer cells are configured")
+		}
+	}
+
+	if c.HeaderFooter.PageNumber.Enabled && strings.TrimSpace(c.HeaderFooter.PageNumber.Format) == "" {
+		return fmt.Errorf("header_footer.page_number.format must not be empty when page numbering is enabled")
+	}
+
+	if err := validateTextStyle(c.HeaderFooter.GlobalStyle, "header_footer.global_style"); err != nil {
+		return err
+	}
+	if err := validateHeaderFooterRegion(c.HeaderFooter.Header, "header_footer.header"); err != nil {
+		return err
+	}
+	if err := validateHeaderFooterRegion(c.HeaderFooter.Footer, "header_footer.footer"); err != nil {
+		return err
+	}
+
 	switch c.Features.PlantUML {
 	case "auto", "on", "off":
 	default:
@@ -245,4 +371,134 @@ func validateLevelRange(fromLevel, toLevel int, key string) error {
 		return fmt.Errorf("%s.from_level must be <= %s.to_level", key, key)
 	}
 	return nil
+}
+
+var hexColorPattern = regexp.MustCompile(`^#[0-9A-Fa-f]{6}$`)
+var namedColorPattern = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_-]*$`)
+
+func validateTextStyle(style TextStyleConfig, prefix string) error {
+	if strings.TrimSpace(style.Color) != "" {
+		color := strings.TrimSpace(style.Color)
+		if !hexColorPattern.MatchString(color) && !namedColorPattern.MatchString(color) {
+			return fmt.Errorf("%s.color must be a named color or #RRGGBB", prefix)
+		}
+	}
+	if style.SizePt < 0 {
+		return fmt.Errorf("%s.size_pt must be >= 0", prefix)
+	}
+	if style.LineHeightPt < 0 {
+		return fmt.Errorf("%s.line_height_pt must be >= 0", prefix)
+	}
+	if style.Opacity < 0 || style.Opacity > 1 {
+		return fmt.Errorf("%s.opacity must be between 0 and 1", prefix)
+	}
+	switch style.Weight {
+	case "", "normal", "bold":
+	default:
+		return fmt.Errorf("%s.weight must be normal or bold", prefix)
+	}
+	return nil
+}
+
+func validateHeaderFooterRegion(region HeaderFooterRegion, prefix string) error {
+	if region.HeightPt < 0 {
+		return fmt.Errorf("%s.height_pt must be >= 0", prefix)
+	}
+	if region.SepPt < 0 {
+		return fmt.Errorf("%s.sep_pt must be >= 0", prefix)
+	}
+	if region.SkipPt < 0 {
+		return fmt.Errorf("%s.skip_pt must be >= 0", prefix)
+	}
+	return validateHeaderFooterGrid(region.Grid, prefix+".grid")
+}
+
+func validateHeaderFooterGrid(grid HeaderFooterGrid, prefix string) error {
+	if len(grid.Columns) == 0 {
+		return fmt.Errorf("%s.columns must not be empty", prefix)
+	}
+	if len(grid.Rows) == 0 {
+		return fmt.Errorf("%s.rows must not be empty", prefix)
+	}
+	for i, c := range grid.Columns {
+		if c <= 0 {
+			return fmt.Errorf("%s.columns[%d] must be > 0", prefix, i)
+		}
+	}
+	for i, r := range grid.Rows {
+		if r <= 0 {
+			return fmt.Errorf("%s.rows[%d] must be > 0", prefix, i)
+		}
+	}
+
+	seen := map[string]struct{}{}
+	for i, cell := range grid.Cells {
+		if cell.Row <= 0 || cell.Row > len(grid.Rows) {
+			return fmt.Errorf("%s.cells[%d].row out of bounds", prefix, i)
+		}
+		if cell.Col <= 0 || cell.Col > len(grid.Columns) {
+			return fmt.Errorf("%s.cells[%d].col out of bounds", prefix, i)
+		}
+
+		if cell.RowSpan == 0 {
+			cell.RowSpan = 1
+		}
+		if cell.ColSpan == 0 {
+			cell.ColSpan = 1
+		}
+		if cell.RowSpan != 1 || cell.ColSpan != 1 {
+			return fmt.Errorf("%s.cells[%d] spans are currently unsupported (row_span and col_span must be 1)", prefix, i)
+		}
+
+		switch cell.AlignH {
+		case "", "left", "center", "right":
+		default:
+			return fmt.Errorf("%s.cells[%d].align_h must be left, center, or right", prefix, i)
+		}
+		switch cell.AlignV {
+		case "", "top", "middle", "bottom":
+		default:
+			return fmt.Errorf("%s.cells[%d].align_v must be top, middle, or bottom", prefix, i)
+		}
+
+		key := fmt.Sprintf("%d:%d", cell.Row, cell.Col)
+		if _, ok := seen[key]; ok {
+			return fmt.Errorf("%s.cells has duplicate cell at row=%d col=%d", prefix, cell.Row, cell.Col)
+		}
+		seen[key] = struct{}{}
+
+		for j, block := range cell.Blocks {
+			if err := validateHeaderFooterBlock(block, fmt.Sprintf("%s.cells[%d].blocks[%d]", prefix, i, j)); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func validateHeaderFooterBlock(block HeaderFooterBlock, prefix string) error {
+	switch block.Type {
+	case "text":
+		if strings.TrimSpace(block.Value) == "" {
+			return fmt.Errorf("%s.value must not be empty for type=text", prefix)
+		}
+	case "image":
+		if strings.TrimSpace(block.Path) == "" {
+			return fmt.Errorf("%s.path must not be empty for type=image", prefix)
+		}
+	case "page_number":
+		// Optional format; falls back to header_footer.page_number.format.
+	default:
+		return fmt.Errorf("%s.type must be one of: text, image, page_number", prefix)
+	}
+
+	if block.WidthPt < 0 {
+		return fmt.Errorf("%s.width_pt must be >= 0", prefix)
+	}
+	if block.HeightPt < 0 {
+		return fmt.Errorf("%s.height_pt must be >= 0", prefix)
+	}
+
+	return validateTextStyle(block.Style, prefix+".style")
 }

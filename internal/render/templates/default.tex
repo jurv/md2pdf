@@ -31,6 +31,8 @@
 \usepackage{enumitem}
 \usepackage{framed}
 \usepackage{fvextra}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
 \usepackage{newunicodechar}
 \usepackage[font=small, labelfont={bf}]{caption}
 
@@ -152,6 +154,12 @@ $endif$
 % Disable LaTeX-native section numbering: numbering is controlled in markdown preprocessing.
 \setcounter{secnumdepth}{-\maxdimen}
 \pagenumbering{arabic}
+$if(hf_enabled)$
+\input{$hf_partial$}
+$if(hf_activate_at_start)$
+\mdtwohfactivate
+$endif$
+$endif$
 $if(cover_mode_external)$
 \input{$cover_external_template$}
 \clearpage
@@ -230,6 +238,9 @@ $if(title)$
 $endif$
 $endif$
 $if(toc)$
+$if(hf_activate_before_toc)$
+\mdtwohfactivate
+$endif$
 {
 $if(toc-title)$
 \renewcommand{\contentsname}{$toc-title$}
@@ -237,6 +248,12 @@ $endif$
 \tableofcontents
 }
 \newpage
+$if(hf_activate_after_toc)$
+\mdtwohfactivate
+$endif$
+$endif$
+$if(hf_activate_before_body_no_toc)$
+\mdtwohfactivate
 $endif$
 
 $body$

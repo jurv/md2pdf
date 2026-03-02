@@ -56,6 +56,9 @@ assets:
     - "assets"
   logo_cover: null
   logo_header: "assets/logo.png"
+header_footer:
+  enabled: false
+  apply_on: toc_and_body
 features:
   plantuml: auto
 ```
@@ -142,10 +145,25 @@ The front matter schema is identical to the config file schema. The table below 
 | `style.colors.primary`               | string or `null` | empty               | Any string (typically hex color)                                      | Passed as metadata key `color_primary` (template-dependent).                                                     |
 | `style.fonts.body`                   | string or `null` | empty               | Any string                                                            | Passed as metadata key `font_body` (template-dependent).                                                         |
 | `style.fonts.heading`                | string or `null` | empty               | Any string                                                            | Passed as metadata key `font_heading` (template-dependent).                                                      |
-| `header_footer.header_left`          | string or `null` | empty               | Any string                                                            | Parsed and merged, currently not consumed by renderer/template.                                                  |
-| `header_footer.header_right`         | string or `null` | empty               | Any string                                                            | Parsed and merged, currently not consumed by renderer/template.                                                  |
-| `header_footer.footer_left`          | string or `null` | empty               | Any string                                                            | Parsed and merged, currently not consumed by renderer/template.                                                  |
-| `header_footer.footer_right`         | string or `null` | empty               | Any string                                                            | Parsed and merged, currently not consumed by renderer/template.                                                  |
+| `header_footer.enabled`              | boolean          | `false`             | `true` or `false`                                                     | Enables rich header/footer rendering in the default template.                                                    |
+| `header_footer.apply_on`             | string           | `toc_and_body`      | `body_only`, `toc_and_body`, `all_pages`                              | Controls where the header/footer style is activated.                                                             |
+| `header_footer.side_offset_left_pt`  | number           | `20`                | `>= 0`                                                                | Extends header/footer rendering into the left page margin (`fancyhfoffset`).                                     |
+| `header_footer.side_offset_right_pt` | number           | `20`                | `>= 0`                                                                | Extends header/footer rendering into the right page margin (`fancyhfoffset`).                                    |
+| `header_footer.footer_reserve_above_pt` | number        | `0`                 | `>= 0`                                                                | Reserves extra space between body content and footer while keeping footer visually anchored near the page bottom. |
+| `header_footer.page_number.enabled`  | boolean          | `true`              | `true` or `false`                                                     | Enables page-number block rendering.                                                                             |
+| `header_footer.page_number.format`   | string           | `{page}`            | Non-empty string                                                      | Default format for `page_number` blocks (supports `{page}`, `{total_pages}`).                                   |
+| `header_footer.page_number.total_pages` | boolean       | `false`             | `true` or `false`                                                     | Enables total-page token use in page-number formatting.                                                          |
+| `header_footer.global_style.color`   | string           | `#E0E0E0`           | named color or `#RRGGBB`                                              | Default text color for header/footer blocks.                                                                     |
+| `header_footer.global_style.size_pt` | number           | `7`                 | `>= 0`                                                                | Default font size in points.                                                                                     |
+| `header_footer.global_style.line_height_pt` | number     | `8`                 | `>= 0`                                                                | Default line height in points.                                                                                   |
+| `header_footer.header.height_pt`     | number           | `36`                | `>= 0`                                                                | Header box height (`\\headheight`).                                                                               |
+| `header_footer.header.sep_pt`        | number           | `22`                | `>= 0`                                                                | Header/content separation (`\\headsep`).                                                                          |
+| `header_footer.header.raise_pt`      | number           | `4`                 | any number                                                            | Vertical nudge for header content in points (positive = higher).                                                 |
+| `header_footer.footer.skip_pt`       | number           | `24`                | `>= 0`                                                                | Footer/content separation (`\\footskip`). For tall footer content, LaTeX may enforce a minimum that makes small changes appear unchanged. |
+| `header_footer.footer.raise_pt`      | number           | `0`                 | any number                                                            | Fine vertical nudge for footer content in points (positive = higher, negative = lower).                         |
+| `header_footer.<header|footer>.grid.columns` | list<number> | `[0.38,0.62]` / `[0.92,0.08]` | positive numbers                                             | Declarative grid column ratios (normalized at render time).                                                      |
+| `header_footer.<header|footer>.grid.rows` | list<number> | `[1]`               | positive numbers                                                      | Declarative grid row ratios (normalized at render time).                                                         |
+| `header_footer.<header|footer>.grid.cells[].blocks[]` | list<object> | empty | `type: text|image|page_number`                                      | Cell content blocks (supports multiline text, image, and pagination).                                            |
 | `features.plantuml`                  | string           | `auto`              | `auto`, `on`, `off`                                                   | Controls PlantUML filter activation and dependency requirements.                                                 |
 
 ### Default heading behavior
@@ -215,14 +233,94 @@ style:
     body: "Open Sans"
     heading: "Open Sans"
 header_footer:
-  header_left: null
-  header_right: null
-  footer_left: null
-  footer_right: null
+  enabled: true
+  apply_on: toc_and_body
+  footer_reserve_above_pt: 0
+  side_offset_left_pt: 20
+  side_offset_right_pt: 20
+  page_number:
+    enabled: true
+    format: "{page}"
+    total_pages: false
+  global_style:
+    font: null
+    color: "#E0E0E0"
+    size_pt: 7
+    line_height_pt: 8
+    opacity: 1.0
+    weight: normal
+  header:
+    height_pt: 36
+    sep_pt: 22
+    raise_pt: 4
+    grid:
+      columns: [0.38, 0.62]
+      rows: [1]
+      cells:
+        - row: 1
+          col: 1
+          align_h: left
+          align_v: top
+          blocks:
+            - type: image
+              path: "assets/logo-header.png"
+              height_pt: 22
+        - row: 1
+          col: 2
+          align_h: right
+          align_v: top
+          blocks:
+            - type: text
+              value: |
+                Integral Service
+                31 rue Ampere
+                69008 Chassieu
+              style:
+                color: "#16AFD2"
+                weight: bold
+  footer:
+    skip_pt: 24
+    raise_pt: 0
+    grid:
+      columns: [0.92, 0.08]
+      rows: [1]
+      cells:
+        - row: 1
+          col: 1
+          align_h: left
+          align_v: bottom
+          blocks:
+            - type: text
+              value: |
+                Confidential. Unauthorized use is prohibited.
+                This document is intended for the addressee only.
+              style:
+                size_pt: 6
+        - row: 1
+          col: 2
+          align_h: right
+          align_v: bottom
+          blocks:
+            - type: page_number
+              format: "{page}"
 features:
   plantuml: auto
 ---
 ```
+
+### Deprecated header/footer keys
+
+Legacy flat keys are no longer accepted: `header_footer.header_left`, `header_footer.header_right`, `header_footer.footer_left`, `header_footer.footer_right`.
+`md2pdf` now raises a configuration error when these keys are present to avoid silent no-op behavior.
+
+### Header/Footer Grid Notes
+
+- `grid.cells[].row` and `grid.cells[].col` are **1-based**.
+- `row_span` and `col_span` keys exist for forward compatibility, but the current renderer only accepts `1`.
+- Supported block types are `text`, `image`, and `page_number`.
+- Text blocks support placeholders: `{page}`, `{total_pages}`, `{title}`, `{date}`.
+- `footer_reserve_above_pt` adds gap above footer while keeping footer position stable (useful for multi-line legal footers).
+- Use `footer.raise_pt` for precise vertical tuning; use `footer.skip_pt` for coarse body/footer separation.
 
 ## Front Matter in Multi-source Mode
 

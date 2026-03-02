@@ -82,7 +82,11 @@ func GeneratePDF(ctx context.Context, opts Options) error {
 	}
 	args = append(args, "--resource-path="+strings.Join(resourcePaths, string(os.PathListSeparator)))
 
-	args = append(args, metadataArgs(opts.Config, filepath.Dir(opts.InputPath))...)
+	metadata, err := metadataArgs(opts.Config, filepath.Dir(opts.InputPath), opts.EnableTOC, workDir)
+	if err != nil {
+		return fmt.Errorf("failed to prepare metadata: %w", err)
+	}
+	args = append(args, metadata...)
 
 	if opts.EnableTOC {
 		args = append(args, "--toc", "--toc-depth="+strconv.Itoa(opts.Config.TOC.ToLevel))
@@ -115,7 +119,7 @@ func GeneratePDF(ctx context.Context, opts Options) error {
 	return nil
 }
 
-func metadataArgs(cfg config.Config, baseDir string) []string {
+func metadataArgs(cfg config.Config, baseDir string, tocEnabled bool, workDir string) ([]string, error) {
 	pairs := make([][2]string, 0)
 	pairs = append(pairs, [2]string{"link-citations", "true"})
 	if cfg.Metadata.Title != "" {
@@ -184,12 +188,17 @@ func metadataArgs(cfg config.Config, baseDir string) []string {
 			pairs = append(pairs, [2]string{"cover_external_template", fs.ResolveOptionalPath(baseDir, cfg.Cover.ExternalTemplate)})
 		}
 	}
+	hfPairs, err := buildHeaderFooterMetadata(cfg, baseDir, workDir, tocEnabled)
+	if err != nil {
+		return nil, err
+	}
+	pairs = append(pairs, hfPairs...)
 
 	out := make([]string, 0, len(pairs)*2)
 	for _, pair := range pairs {
 		out = append(out, "--metadata", pair[0]+"="+pair[1])
 	}
-	return out
+	return out, nil
 }
 
 func writeDefaultTemplate(workDir string) (string, error) {

@@ -12,6 +12,7 @@
 - Merge and compress existing PDF files.
 - Apply safe default rendering guards (image auto-fit, code wrapping, and Unicode fallbacks).
 - Add an optional builtin or external-template cover page.
+- Configure rich header/footer layouts (multiline text, images, colors, page numbering) with a declarative grid model.
 
 ## Prerequisites
 
