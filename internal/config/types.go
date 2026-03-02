@@ -84,8 +84,9 @@ type AssetsConfig struct {
 }
 
 type StyleConfig struct {
-	Colors ColorsConfig `yaml:"colors"`
-	Fonts  FontsConfig  `yaml:"fonts"`
+	Colors     ColorsConfig          `yaml:"colors"`
+	Fonts      FontsConfig           `yaml:"fonts"`
+	BlockQuote BlockQuoteStyleConfig `yaml:"blockquote"`
 }
 
 type ColorsConfig struct {
@@ -95,6 +96,15 @@ type ColorsConfig struct {
 type FontsConfig struct {
 	Body    string `yaml:"body"`
 	Heading string `yaml:"heading"`
+}
+
+type BlockQuoteStyleConfig struct {
+	BarColor        string  `yaml:"bar_color"`
+	TextColor       string  `yaml:"text_color"`
+	BackgroundColor string  `yaml:"background_color"`
+	BarWidthPt      float64 `yaml:"bar_width_pt"`
+	GapPt           float64 `yaml:"gap_pt"`
+	PaddingPt       float64 `yaml:"padding_pt"`
 }
 
 type HeaderFooterConfig struct {
@@ -197,6 +207,16 @@ func Default() Config {
 				TitleColor:      "#000000",
 				BackgroundColor: "#FFFFFF",
 				Align:           "center",
+			},
+		},
+		Style: StyleConfig{
+			BlockQuote: BlockQuoteStyleConfig{
+				BarColor:        "#E6E6E6",
+				TextColor:       "#6F6F6F",
+				BackgroundColor: "#F7F7F7",
+				BarWidthPt:      0.8,
+				GapPt:           5,
+				PaddingPt:       2,
 			},
 		},
 		HeaderFooter: HeaderFooterConfig{
@@ -317,6 +337,10 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("invalid cover.builtin.align %q (allowed: center, top)", c.Cover.Builtin.Align)
 	}
 
+	if err := validateBlockQuoteStyle(c.Style.BlockQuote, "style.blockquote"); err != nil {
+		return err
+	}
+
 	switch c.HeaderFooter.ApplyOn {
 	case "body_only", "toc_and_body", "all_pages":
 	default:
@@ -377,11 +401,8 @@ var hexColorPattern = regexp.MustCompile(`^#[0-9A-Fa-f]{6}$`)
 var namedColorPattern = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_-]*$`)
 
 func validateTextStyle(style TextStyleConfig, prefix string) error {
-	if strings.TrimSpace(style.Color) != "" {
-		color := strings.TrimSpace(style.Color)
-		if !hexColorPattern.MatchString(color) && !namedColorPattern.MatchString(color) {
-			return fmt.Errorf("%s.color must be a named color or #RRGGBB", prefix)
-		}
+	if err := validateColorValue(style.Color, prefix+".color"); err != nil {
+		return err
 	}
 	if style.SizePt < 0 {
 		return fmt.Errorf("%s.size_pt must be >= 0", prefix)
@@ -396,6 +417,39 @@ func validateTextStyle(style TextStyleConfig, prefix string) error {
 	case "", "normal", "bold":
 	default:
 		return fmt.Errorf("%s.weight must be normal or bold", prefix)
+	}
+	return nil
+}
+
+func validateBlockQuoteStyle(style BlockQuoteStyleConfig, prefix string) error {
+	if err := validateColorValue(style.BarColor, prefix+".bar_color"); err != nil {
+		return err
+	}
+	if err := validateColorValue(style.TextColor, prefix+".text_color"); err != nil {
+		return err
+	}
+	if err := validateColorValue(style.BackgroundColor, prefix+".background_color"); err != nil {
+		return err
+	}
+	if style.BarWidthPt < 0 {
+		return fmt.Errorf("%s.bar_width_pt must be >= 0", prefix)
+	}
+	if style.GapPt < 0 {
+		return fmt.Errorf("%s.gap_pt must be >= 0", prefix)
+	}
+	if style.PaddingPt < 0 {
+		return fmt.Errorf("%s.padding_pt must be >= 0", prefix)
+	}
+	return nil
+}
+
+func validateColorValue(raw, prefix string) error {
+	color := strings.TrimSpace(raw)
+	if color == "" {
+		return nil
+	}
+	if !hexColorPattern.MatchString(color) && !namedColorPattern.MatchString(color) {
+		return fmt.Errorf("%s must be a named color or #RRGGBB", prefix)
 	}
 	return nil
 }

@@ -138,6 +138,64 @@ $endif$
 \newunicodechar{•}{\textbullet}
 \newunicodechar{⚠}{\textbf{!}}
 
+% Quotes: subtle visual distinction with configurable bar/text style.
+$if(blockquote_bar_color_value)$
+$if(blockquote_bar_color_model)$
+\newcommand{\mdtwoquotebarcolor}{\color[$blockquote_bar_color_model$]{$blockquote_bar_color_value$}}
+$else$
+\newcommand{\mdtwoquotebarcolor}{\color{$blockquote_bar_color_value$}}
+$endif$
+$else$
+\newcommand{\mdtwoquotebarcolor}{\color[HTML]{E6E6E6}}
+$endif$
+
+$if(blockquote_text_color_value)$
+$if(blockquote_text_color_model)$
+\newcommand{\mdtwoquotetextcolor}{\color[$blockquote_text_color_model$]{$blockquote_text_color_value$}}
+$else$
+\newcommand{\mdtwoquotetextcolor}{\color{$blockquote_text_color_value$}}
+$endif$
+$else$
+\newcommand{\mdtwoquotetextcolor}{\color[HTML]{6F6F6F}}
+$endif$
+
+$if(blockquote_background_color_value)$
+$if(blockquote_background_color_model)$
+\newcommand{\mdtwoquotebg}[1]{{\setlength{\fboxsep}{\mdtwoquotepadding}\colorbox[$blockquote_background_color_model$]{$blockquote_background_color_value$}{#1}}}
+$else$
+\newcommand{\mdtwoquotebg}[1]{{\setlength{\fboxsep}{\mdtwoquotepadding}\colorbox{$blockquote_background_color_value$}{#1}}}
+$endif$
+$else$
+\newcommand{\mdtwoquotebg}[1]{{\setlength{\fboxsep}{\mdtwoquotepadding}\colorbox[HTML]{F7F7F7}{#1}}}
+$endif$
+
+$if(blockquote_bar_width_pt)$
+\newcommand{\mdtwoquotebarwidth}{$blockquote_bar_width_pt$pt}
+$else$
+\newcommand{\mdtwoquotebarwidth}{0.8pt}
+$endif$
+
+$if(blockquote_gap_pt)$
+\newcommand{\mdtwoquotegap}{$blockquote_gap_pt$pt}
+$else$
+\newcommand{\mdtwoquotegap}{5pt}
+$endif$
+
+$if(blockquote_padding_pt)$
+\newcommand{\mdtwoquotepadding}{$blockquote_padding_pt$pt}
+$else$
+\newcommand{\mdtwoquotepadding}{2pt}
+$endif$
+\makeatletter
+\renewenvironment{quote}{%
+  \def\FrameCommand##1{{\mdtwoquotebarcolor\vrule width \mdtwoquotebarwidth}\hspace{\mdtwoquotegap}\mdtwoquotebg{##1}}%
+  \MakeFramed{\advance\hsize-\width \FrameRestore}%
+  \begingroup\mdtwoquotetextcolor%
+}{%
+  \par\endgroup\endMakeFramed
+}
+\makeatother
+
 $if(title)$
 \title{$title$}
 $endif$

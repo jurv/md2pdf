@@ -76,3 +76,26 @@ func TestHeaderFooterValidateFooterReserveAbovePt(t *testing.T) {
 		t.Fatalf("expected footer_reserve_above_pt validation error, got %v", err)
 	}
 }
+
+func TestBlockQuoteStyleValidation(t *testing.T) {
+	cfg := Default()
+	cfg.Style.BlockQuote.BarColor = "not a color"
+	err := cfg.Validate()
+	if err == nil || !strings.Contains(err.Error(), "style.blockquote.bar_color") {
+		t.Fatalf("expected bar_color validation error, got %v", err)
+	}
+
+	cfg = Default()
+	cfg.Style.BlockQuote.BarWidthPt = -0.1
+	err = cfg.Validate()
+	if err == nil || !strings.Contains(err.Error(), "style.blockquote.bar_width_pt") {
+		t.Fatalf("expected bar_width_pt validation error, got %v", err)
+	}
+
+	cfg = Default()
+	cfg.Style.BlockQuote.PaddingPt = -1
+	err = cfg.Validate()
+	if err == nil || !strings.Contains(err.Error(), "style.blockquote.padding_pt") {
+		t.Fatalf("expected padding_pt validation error, got %v", err)
+	}
+}

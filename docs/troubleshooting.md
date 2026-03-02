@@ -46,3 +46,13 @@ If you use a custom `pdf.template`, make sure it includes a global image policy 
 ```
 
 The embedded default template already applies this safeguard.
+
+## Blockquotes (`>`) are not rendered as quotes
+
+`md2pdf` configures Pandoc to accept blockquotes inside list items even when no extra blank line is present before `>`.
+
+If you still get plain text instead of quote blocks, check that:
+
+- quote lines start with `>` (or are valid wrapped continuation lines)
+- indentation is consistent with the current list nesting level
+- the markdown file is the one actually passed to `md2pdf build`

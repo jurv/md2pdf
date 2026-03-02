@@ -29,6 +29,8 @@ type Options struct {
 	VerboseExecution bool
 }
 
+const pandocInputFormat = "markdown-blank_before_blockquote"
+
 func GeneratePDF(ctx context.Context, opts Options) error {
 	if len(opts.Markdown) == 0 {
 		return fmt.Errorf("cannot render empty markdown input")
@@ -61,7 +63,8 @@ func GeneratePDF(ctx context.Context, opts Options) error {
 	args := []string{
 		tmpPath,
 		"-o", outputPath,
-		"--from=markdown",
+		// Accept blockquotes in list items even without an extra blank line.
+		"--from=" + pandocInputFormat,
 		"--pdf-engine=" + opts.Config.PDF.Engine,
 	}
 
@@ -146,6 +149,32 @@ func metadataArgs(cfg config.Config, baseDir string, tocEnabled bool, workDir st
 	if cfg.Style.Fonts.Heading != "" {
 		pairs = append(pairs, [2]string{"font_heading", cfg.Style.Fonts.Heading})
 	}
+	if cfg.Style.BlockQuote.BarColor != "" {
+		model, value := latexColor(cfg.Style.BlockQuote.BarColor)
+		pairs = append(pairs, [2]string{"blockquote_bar_color_value", value})
+		if model != "" {
+			pairs = append(pairs, [2]string{"blockquote_bar_color_model", model})
+		}
+	}
+	if cfg.Style.BlockQuote.TextColor != "" {
+		model, value := latexColor(cfg.Style.BlockQuote.TextColor)
+		pairs = append(pairs, [2]string{"blockquote_text_color_value", value})
+		if model != "" {
+			pairs = append(pairs, [2]string{"blockquote_text_color_model", model})
+		}
+	}
+	if cfg.Style.BlockQuote.BackgroundColor != "" {
+		model, value := latexColor(cfg.Style.BlockQuote.BackgroundColor)
+		pairs = append(pairs, [2]string{"blockquote_background_color_value", value})
+		if model != "" {
+			pairs = append(pairs, [2]string{"blockquote_background_color_model", model})
+		}
+	}
+	pairs = append(pairs,
+		[2]string{"blockquote_bar_width_pt", strconv.FormatFloat(cfg.Style.BlockQuote.BarWidthPt, 'f', -1, 64)},
+		[2]string{"blockquote_gap_pt", strconv.FormatFloat(cfg.Style.BlockQuote.GapPt, 'f', -1, 64)},
+		[2]string{"blockquote_padding_pt", strconv.FormatFloat(cfg.Style.BlockQuote.PaddingPt, 'f', -1, 64)},
+	)
 	switch cfg.Title.RenderMode {
 	case "inline":
 		pairs = append(pairs, [2]string{"title_render_inline", "true"})

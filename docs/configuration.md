@@ -145,6 +145,12 @@ The front matter schema is identical to the config file schema. The table below 
 | `style.colors.primary`               | string or `null` | empty               | Any string (typically hex color)                                      | Passed as metadata key `color_primary` (template-dependent).                                                     |
 | `style.fonts.body`                   | string or `null` | empty               | Any string                                                            | Passed as metadata key `font_body` (template-dependent).                                                         |
 | `style.fonts.heading`                | string or `null` | empty               | Any string                                                            | Passed as metadata key `font_heading` (template-dependent).                                                      |
+| `style.blockquote.bar_color`         | string           | `#E6E6E6`           | named color or `#RRGGBB`                                              | Left bar color for Markdown blockquotes in the default template.                                                 |
+| `style.blockquote.text_color`        | string           | `#6F6F6F`           | named color or `#RRGGBB`                                              | Text color for Markdown blockquotes in the default template.                                                     |
+| `style.blockquote.background_color`  | string           | `#F7F7F7`           | named color or `#RRGGBB`                                              | Background color for Markdown blockquotes in the default template.                                               |
+| `style.blockquote.bar_width_pt`      | number           | `0.8`               | `>= 0`                                                                | Left bar width for blockquotes (points).                                                                         |
+| `style.blockquote.gap_pt`            | number           | `5`                 | `>= 0`                                                                | Horizontal gap between quote bar and quote text (points).                                                        |
+| `style.blockquote.padding_pt`        | number           | `2`                 | `>= 0`                                                                | Inner padding applied to quote background (points).                                                              |
 | `header_footer.enabled`              | boolean          | `false`             | `true` or `false`                                                     | Enables rich header/footer rendering in the default template.                                                    |
 | `header_footer.apply_on`             | string           | `toc_and_body`      | `body_only`, `toc_and_body`, `all_pages`                              | Controls where the header/footer style is activated.                                                             |
 | `header_footer.side_offset_left_pt`  | number           | `20`                | `>= 0`                                                                | Extends header/footer rendering into the left page margin (`fancyhfoffset`).                                     |
@@ -169,6 +175,10 @@ The front matter schema is identical to the config file schema. The table below 
 ### Default heading behavior
 
 Out of the box, the first entrypoint `#` heading is used as the document title and removed from body content. Heading numbering starts at `##` and ends at `###` (`1`, `1.1`, `2`, ...). By default, ToC bounds mirror numbering bounds (`h2..h3`), so `#` and `####+` headings are automatically marked as unlisted.
+
+### Default blockquote behavior
+
+With the embedded template, Markdown blockquotes (`>`) are rendered with a thin left bar, lighter text, and a subtle background. You can tune bar color, text color, background, bar width, spacing, and padding through `style.blockquote.*`.
 
 ### Schema strictness
 
@@ -232,6 +242,13 @@ style:
   fonts:
     body: "Open Sans"
     heading: "Open Sans"
+  blockquote:
+    bar_color: "#E6E6E6"
+    text_color: "#6F6F6F"
+    background_color: "#F7F7F7"
+    bar_width_pt: 0.8
+    gap_pt: 5
+    padding_pt: 2
 header_footer:
   enabled: true
   apply_on: toc_and_body

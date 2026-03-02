@@ -1,6 +1,11 @@
 package render
 
-import "testing"
+import (
+	"strings"
+	"testing"
+
+	"github.com/julien/md2pdf/internal/config"
+)
 
 func TestShouldEnableTOC(t *testing.T) {
 	md := []byte("# Title\n\n## Section")
@@ -38,5 +43,59 @@ func TestLatexColorNamed(t *testing.T) {
 	model, value := latexColor("blue")
 	if model != "" || value != "blue" {
 		t.Fatalf("unexpected conversion: model=%q value=%q", model, value)
+	}
+}
+
+func TestPandocInputFormatSupportsInlineListBlockquotes(t *testing.T) {
+	if pandocInputFormat != "markdown-blank_before_blockquote" {
+		t.Fatalf("unexpected input format %q", pandocInputFormat)
+	}
+}
+
+func TestDefaultTemplateDefinesStyledQuoteEnvironment(t *testing.T) {
+	for _, needle := range []string{
+		`\renewenvironment{quote}{`,
+		`\newcommand{\mdtwoquotebarcolor}`,
+		`\newcommand{\mdtwoquotetextcolor}`,
+		`\newcommand{\mdtwoquotebg}[1]`,
+		`\newcommand{\mdtwoquotebarwidth}`,
+		`\newcommand{\mdtwoquotegap}`,
+		`\newcommand{\mdtwoquotepadding}`,
+		`\MakeFramed{\advance\hsize-\width \FrameRestore}`,
+	} {
+		if !strings.Contains(defaultTemplate, needle) {
+			t.Fatalf("default template missing %q", needle)
+		}
+	}
+}
+
+func TestMetadataArgsIncludesBlockQuoteStyle(t *testing.T) {
+	cfg := config.Default()
+	cfg.Style.BlockQuote.BarColor = "#AABBCC"
+	cfg.Style.BlockQuote.TextColor = "gray"
+	cfg.Style.BlockQuote.BackgroundColor = "#F0F2F4"
+	cfg.Style.BlockQuote.BarWidthPt = 1.2
+	cfg.Style.BlockQuote.GapPt = 6
+	cfg.Style.BlockQuote.PaddingPt = 3
+
+	args, err := metadataArgs(cfg, "/tmp", false, t.TempDir())
+	if err != nil {
+		t.Fatalf("metadataArgs returned error: %v", err)
+	}
+
+	joined := strings.Join(args, " ")
+	for _, needle := range []string{
+		"blockquote_bar_color_model=HTML",
+		"blockquote_bar_color_value=AABBCC",
+		"blockquote_text_color_value=gray",
+		"blockquote_background_color_model=HTML",
+		"blockquote_background_color_value=F0F2F4",
+		"blockquote_bar_width_pt=1.2",
+		"blockquote_gap_pt=6",
+		"blockquote_padding_pt=3",
+	} {
+		if !strings.Contains(joined, needle) {
+			t.Fatalf("expected metadata to contain %q, got %q", needle, joined)
+		}
 	}
 }
