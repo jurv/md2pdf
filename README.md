@@ -12,7 +12,7 @@
 - Merge and compress existing PDF files.
 - Apply safe default rendering guards (image auto-fit, code wrapping, and Unicode fallbacks).
 - Style Markdown blockquotes in the default template (bar color, text color, bar width, spacing).
-- Add an optional builtin or external-template cover page.
+- Add an optional cover page (builtin, external template, or full-bleed cover image with simple config).
 - Configure rich header/footer layouts (multiline text, images, colors, page numbering) with a declarative grid model.
 
 ## Prerequisites

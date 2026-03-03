@@ -31,9 +31,11 @@
 \usepackage{enumitem}
 \usepackage{framed}
 \usepackage{fvextra}
+\usepackage{eso-pic}
 \usepackage{fancyhdr}
 \usepackage{lastpage}
 \usepackage{newunicodechar}
+\usepackage{xfp}
 \usepackage[font=small, labelfont={bf}]{caption}
 
 \geometry{margin=2.5cm}
@@ -138,6 +140,34 @@ $endif$
 \newunicodechar{•}{\textbullet}
 \newunicodechar{⚠}{\textbf{!}}
 
+% Cover background helpers (first page full-bleed image support).
+\newsavebox{\mdtwocoverimgbox}
+\newcommand{\mdtwoplacecovergraphic}[1]{%
+  \AddToShipoutPictureBG*{%
+    \AtPageLowerLeft{%
+      \parbox[b][\paperheight][c]{\paperwidth}{\centering #1}%
+    }%
+  }%
+}
+\makeatletter
+\newcommand{\mdtwoaddcoverimagecover}[1]{%
+  \sbox{\mdtwocoverimgbox}{\includegraphics{#1}}%
+  \edef\mdtwo@img@ratio{\fpeval{\strip@pt\wd\mdtwocoverimgbox / \strip@pt\dimexpr\ht\mdtwocoverimgbox+\dp\mdtwocoverimgbox\relax}}%
+  \edef\mdtwo@page@ratio{\fpeval{\strip@pt\paperwidth / \strip@pt\paperheight}}%
+  \ifdim\mdtwo@img@ratio pt>\mdtwo@page@ratio pt
+    \mdtwoplacecovergraphic{\begingroup\setkeys{Gin}{width=10000pt,height=\paperheight,keepaspectratio=true}\includegraphics{#1}\endgroup}%
+  \else
+    \mdtwoplacecovergraphic{\begingroup\setkeys{Gin}{width=\paperwidth,height=10000pt,keepaspectratio=true}\includegraphics{#1}\endgroup}%
+  \fi
+}
+\makeatother
+\newcommand{\mdtwoaddcoverimagecontain}[1]{%
+  \mdtwoplacecovergraphic{\begingroup\setkeys{Gin}{width=\paperwidth,height=\paperheight,keepaspectratio=true}\includegraphics{#1}\endgroup}%
+}
+\newcommand{\mdtwoaddcoverimagestretch}[1]{%
+  \mdtwoplacecovergraphic{\begingroup\setkeys{Gin}{width=\paperwidth,height=\paperheight,keepaspectratio=false}\includegraphics{#1}\endgroup}%
+}
+
 % Quotes: subtle visual distinction with configurable bar/text style.
 $if(blockquote_bar_color_value)$
 $if(blockquote_bar_color_model)$
@@ -218,12 +248,39 @@ $if(hf_activate_at_start)$
 \mdtwohfactivate
 $endif$
 $endif$
+$if(cover_mode_first_page_background)$
+$if(cover_image_fit_contain)$
+\mdtwoaddcoverimagecontain{$cover_image$}
+$endif$
+$if(cover_image_fit_stretch)$
+\mdtwoaddcoverimagestretch{$cover_image$}
+$endif$
+$if(cover_image_fit_cover)$
+\mdtwoaddcoverimagecover{$cover_image$}
+$endif$
+$endif$
 $if(cover_mode_external)$
 \input{$cover_external_template$}
 \clearpage
 $endif$
 $if(cover_mode_builtin)$
-\begin{titlepage}
+\begingroup
+$if(hf_activate_at_start)$
+\thispagestyle{mdtwohf}
+$else$
+\thispagestyle{empty}
+$endif$
+$if(cover_image)$
+$if(cover_image_fit_contain)$
+\mdtwoaddcoverimagecontain{$cover_image$}
+$endif$
+$if(cover_image_fit_stretch)$
+\mdtwoaddcoverimagestretch{$cover_image$}
+$endif$
+$if(cover_image_fit_cover)$
+\mdtwoaddcoverimagecover{$cover_image$}
+$endif$
+$endif$
 \centering
 $if(cover_background_color_value)$
 $if(cover_background_color_model)$
@@ -267,10 +324,17 @@ $endif$
 $if(date)$
 {\large $date$\par}
 $endif$
-\end{titlepage}
+$if(cover_image)$
+\ClearShipoutPictureBG
+$endif$
+$if(hf_activate_at_start)$
+\thispagestyle{mdtwohf}
+$endif$
+\endgroup
 $if(cover_background_color_value)$
 \nopagecolor
 $endif$
+\clearpage
 $endif$
 $if(title_render_separate_page)$
 $if(title)$
@@ -292,7 +356,10 @@ $endif$
 $endif$
 $if(title_render_inline)$
 $if(title)$
+$if(cover_mode_builtin)$
+$else$
 \maketitle
+$endif$
 $endif$
 $endif$
 $if(toc)$

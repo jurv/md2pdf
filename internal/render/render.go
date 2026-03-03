@@ -183,9 +183,22 @@ func metadataArgs(cfg config.Config, baseDir string, tocEnabled bool, workDir st
 	case "none":
 		pairs = append(pairs, [2]string{"title_render_none", "true"})
 	}
-	switch cfg.Cover.Mode {
+	coverMode := strings.TrimSpace(cfg.Cover.Mode)
+	coverImage := strings.TrimSpace(cfg.Cover.Image)
+	switch coverMode {
 	case "builtin":
 		pairs = append(pairs, [2]string{"cover_mode_builtin", "true"})
+		if coverImage != "" {
+			pairs = append(pairs, [2]string{"cover_image", fs.ResolveOptionalPath(baseDir, coverImage)})
+			switch effectiveCoverImageFit(cfg) {
+			case "contain":
+				pairs = append(pairs, [2]string{"cover_image_fit_contain", "true"})
+			case "stretch":
+				pairs = append(pairs, [2]string{"cover_image_fit_stretch", "true"})
+			default:
+				pairs = append(pairs, [2]string{"cover_image_fit_cover", "true"})
+			}
+		}
 		if cfg.Cover.Builtin.Logo != "" {
 			pairs = append(pairs, [2]string{"cover_logo", fs.ResolveOptionalPath(baseDir, cfg.Cover.Builtin.Logo)})
 		}
@@ -215,6 +228,23 @@ func metadataArgs(cfg config.Config, baseDir string, tocEnabled bool, workDir st
 		pairs = append(pairs, [2]string{"cover_mode_external", "true"})
 		if cfg.Cover.ExternalTemplate != "" {
 			pairs = append(pairs, [2]string{"cover_external_template", fs.ResolveOptionalPath(baseDir, cfg.Cover.ExternalTemplate)})
+		}
+	default:
+		// Simple cover image mode: use image as full-bleed first-page background
+		// without inserting a dedicated extra cover page.
+		if coverImage != "" {
+			pairs = append(pairs,
+				[2]string{"cover_mode_first_page_background", "true"},
+				[2]string{"cover_image", fs.ResolveOptionalPath(baseDir, coverImage)},
+			)
+			switch effectiveCoverImageFit(cfg) {
+			case "contain":
+				pairs = append(pairs, [2]string{"cover_image_fit_contain", "true"})
+			case "stretch":
+				pairs = append(pairs, [2]string{"cover_image_fit_stretch", "true"})
+			default:
+				pairs = append(pairs, [2]string{"cover_image_fit_cover", "true"})
+			}
 		}
 	}
 	hfPairs, err := buildHeaderFooterMetadata(cfg, baseDir, workDir, tocEnabled)
@@ -323,6 +353,17 @@ func withHeadlessJavaEnv(base []string) []string {
 		out = append(out, "JAVA_TOOL_OPTIONS=-Djava.awt.headless=true")
 	}
 	return out
+}
+
+func effectiveCoverImageFit(cfg config.Config) string {
+	switch strings.TrimSpace(cfg.Cover.ImageFit) {
+	case "contain":
+		return "contain"
+	case "stretch":
+		return "stretch"
+	default:
+		return "cover"
+	}
 }
 
 var hexColorRE = regexp.MustCompile(`^#([0-9A-Fa-f]{6})$`)

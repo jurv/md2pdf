@@ -61,6 +61,8 @@ type TOCConfig struct {
 type CoverConfig struct {
 	Mode             string             `yaml:"mode"`
 	ExternalTemplate string             `yaml:"external_template"`
+	Image            string             `yaml:"image"`
+	ImageFit         string             `yaml:"image_fit"`
 	Builtin          BuiltinCoverConfig `yaml:"builtin"`
 }
 
@@ -202,7 +204,8 @@ func Default() Config {
 			ToLevel:   3,
 		},
 		Cover: CoverConfig{
-			Mode: "none",
+			Mode:     "none",
+			ImageFit: "cover",
 			Builtin: BuiltinCoverConfig{
 				TitleColor:      "#000000",
 				BackgroundColor: "#FFFFFF",
@@ -329,6 +332,14 @@ func (c *Config) Validate() error {
 
 	if c.Cover.Mode == "external_template" && c.Cover.ExternalTemplate == "" {
 		return fmt.Errorf("cover.external_template must be set when cover.mode=external_template")
+	}
+	if c.Cover.Mode == "external_template" && strings.TrimSpace(c.Cover.Image) != "" {
+		return fmt.Errorf("cover.image cannot be set when cover.mode=external_template")
+	}
+	switch c.Cover.ImageFit {
+	case "", "cover", "contain", "stretch":
+	default:
+		return fmt.Errorf("invalid cover.image_fit %q (allowed: cover, contain, stretch)", c.Cover.ImageFit)
 	}
 
 	switch c.Cover.Builtin.Align {

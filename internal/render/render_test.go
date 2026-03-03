@@ -1,6 +1,7 @@
 package render
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -97,5 +98,98 @@ func TestMetadataArgsIncludesBlockQuoteStyle(t *testing.T) {
 		if !strings.Contains(joined, needle) {
 			t.Fatalf("expected metadata to contain %q, got %q", needle, joined)
 		}
+	}
+}
+
+func TestMetadataArgsCoverImageImplicitBuiltinMode(t *testing.T) {
+	cfg := config.Default()
+	cfg.Cover.Mode = "none"
+	cfg.Cover.Image = "assets/cover.png"
+	cfg.Cover.ImageFit = "cover"
+
+	args, err := metadataArgs(cfg, "/tmp/project", false, t.TempDir())
+	if err != nil {
+		t.Fatalf("metadataArgs returned error: %v", err)
+	}
+
+	joined := strings.Join(args, " ")
+	for _, needle := range []string{
+		"cover_mode_first_page_background=true",
+		"cover_image=" + filepath.Clean("/tmp/project/assets/cover.png"),
+		"cover_image_fit_cover=true",
+	} {
+		if !strings.Contains(joined, needle) {
+			t.Fatalf("expected metadata to contain %q, got %q", needle, joined)
+		}
+	}
+	if strings.Contains(joined, "cover_mode_builtin=true") {
+		t.Fatalf("did not expect cover_mode_builtin for implicit cover.image mode, got %q", joined)
+	}
+}
+
+func TestMetadataArgsCoverImageFitContain(t *testing.T) {
+	cfg := config.Default()
+	cfg.Cover.Mode = "builtin"
+	cfg.Cover.Image = "assets/cover.png"
+	cfg.Cover.ImageFit = "contain"
+
+	args, err := metadataArgs(cfg, "/tmp/project", false, t.TempDir())
+	if err != nil {
+		t.Fatalf("metadataArgs returned error: %v", err)
+	}
+
+	joined := strings.Join(args, " ")
+	if !strings.Contains(joined, "cover_image_fit_contain=true") {
+		t.Fatalf("expected contain fit metadata, got %q", joined)
+	}
+	if strings.Contains(joined, "cover_image_fit_cover=true") {
+		t.Fatalf("did not expect cover fit metadata when contain is selected, got %q", joined)
+	}
+}
+
+func TestDefaultTemplateDefinesCoverImageHelpers(t *testing.T) {
+	for _, needle := range []string{
+		`\newcommand{\mdtwoaddcoverimagecover}[1]{`,
+		`\newcommand{\mdtwoaddcoverimagecontain}[1]{`,
+		`\newcommand{\mdtwoaddcoverimagestretch}[1]{`,
+		`\AddToShipoutPictureBG*`,
+		`$if(cover_mode_first_page_background)$`,
+	} {
+		if !strings.Contains(defaultTemplate, needle) {
+			t.Fatalf("default template missing %q", needle)
+		}
+	}
+}
+
+func TestDefaultTemplateSkipsInlineTitleWhenBuiltinCoverIsEnabled(t *testing.T) {
+	for _, needle := range []string{
+		`$if(title_render_inline)$`,
+		`$if(cover_mode_builtin)$`,
+		`\maketitle`,
+	} {
+		if !strings.Contains(defaultTemplate, needle) {
+			t.Fatalf("default template missing %q", needle)
+		}
+	}
+}
+
+func TestMetadataArgsCoverImageSimpleModeKeepsAllPagesHeaderFooterStart(t *testing.T) {
+	cfg := config.Default()
+	cfg.Cover.Mode = "none"
+	cfg.Cover.Image = "assets/cover.png"
+	cfg.HeaderFooter.Enabled = true
+	cfg.HeaderFooter.ApplyOn = "all_pages"
+
+	args, err := metadataArgs(cfg, "/tmp/project", false, t.TempDir())
+	if err != nil {
+		t.Fatalf("metadataArgs returned error: %v", err)
+	}
+
+	joined := strings.Join(args, " ")
+	if !strings.Contains(joined, "hf_activate_at_start=true") {
+		t.Fatalf("expected hf_activate_at_start for first-page-background mode, got %q", joined)
+	}
+	if strings.Contains(joined, "hf_activate_after_cover=true") {
+		t.Fatalf("did not expect hf_activate_after_cover for first-page-background mode, got %q", joined)
 	}
 }

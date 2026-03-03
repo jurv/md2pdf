@@ -130,8 +130,10 @@ The front matter schema is identical to the config file schema. The table below 
 | `toc.from_level`                     | integer          | `2`                 | `1..6`, `<= to_level`                                                 | Minimum heading level included in ToC auto-detection and filtering.                                              |
 | `toc.to_level`                       | integer          | `3`                 | `1..6`, `>= from_level`                                               | Maximum heading level included in ToC and passed as Pandoc `--toc-depth`.                                        |
 | `toc.depth`                          | integer          | `3`                 | Must be `> 0`                                                         | Backward-compatible alias of `toc.to_level`.                                                                     |
-| `cover.mode`                         | string           | `none`              | `none`, `builtin`, `external_template`                                | Adds an optional cover page before title/body.                                                                   |
-| `cover.external_template`            | string or `null` | empty               | File path                                                             | Required when `cover.mode: external_template`; LaTeX file included with `\\input`.                               |
+| `cover.mode`                         | string           | `none`              | `none`, `builtin`, `external_template`                                | Cover strategy. With `none` + `cover.image`, image is first-page background (no extra page). With `builtin`, a dedicated cover page is inserted. |
+| `cover.external_template`            | string or `null` | empty               | File path                                                             | Required when `cover.mode: external_template`; LaTeX file included with `\\input`. Incompatible with `cover.image`. |
+| `cover.image`                        | string or `null` | empty               | File path                                                             | Full-bleed image for page 1. With `cover.mode: none`, it decorates page 1 background without adding a new page.   |
+| `cover.image_fit`                    | string           | `cover`             | `cover`, `contain`, `stretch`                                         | Fit behavior for `cover.image` (`cover` crops, `contain` preserves full image, `stretch` fills with distortion). |
 | `cover.builtin.logo`                 | string or `null` | empty               | File path                                                             | Logo path for builtin cover.                                                                                     |
 | `cover.builtin.title_color`          | string           | `#000000`           | color name or `#RRGGBB`                                               | Title color on builtin cover.                                                                                    |
 | `cover.builtin.subtitle`             | string or `null` | empty               | Any string                                                            | Subtitle text on builtin cover.                                                                                  |
@@ -180,6 +182,32 @@ Out of the box, the first entrypoint `#` heading is used as the document title a
 
 With the embedded template, Markdown blockquotes (`>`) are rendered with a thin left bar, lighter text, and a subtle background. You can tune bar color, text color, background, bar width, spacing, and padding through `style.blockquote.*`.
 
+### Full-bleed cover image
+
+For a simple full-page cover image, use only:
+
+```yaml
+cover:
+  image: "assets/cover.png"
+```
+
+Behavior:
+
+- page 1 uses the image as full-bleed background (no page margins)
+- no dedicated extra cover page is inserted in this simple mode
+- default fit is `cover`
+- document flow stays unchanged (same first content page, just with background)
+
+If you need a dedicated standalone cover page (with optional logo/title/subtitle overlays), use:
+
+```yaml
+cover:
+  mode: builtin
+  image: "assets/cover.png"
+```
+
+In `cover.mode: builtin`, the cover already renders title/author; default inline title rendering is skipped on the following pages to avoid duplicate title blocks.
+
 ### Schema strictness
 
 At the moment, unknown keys are ignored. To avoid silent mistakes, prefer keeping front matter limited to the keys listed above.
@@ -219,6 +247,8 @@ toc:
 cover:
   mode: none
   external_template: null
+  image: null
+  image_fit: cover
   builtin:
     logo: null
     title_color: "#000000"

@@ -98,6 +98,28 @@ func TestBuildHeaderFooterMetadataActivationFlags(t *testing.T) {
 	}
 }
 
+func TestBuildHeaderFooterMetadataAllPagesStartsImmediately(t *testing.T) {
+	cfg := config.Default()
+	cfg.HeaderFooter.Enabled = true
+	cfg.HeaderFooter.ApplyOn = "all_pages"
+	workDir := t.TempDir()
+
+	meta, err := buildHeaderFooterMetadata(cfg, "/tmp", workDir, false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	hasAtStart := false
+	for _, pair := range meta {
+		if pair[0] == "hf_activate_at_start" {
+			hasAtStart = true
+		}
+	}
+	if !hasAtStart {
+		t.Fatalf("expected hf_activate_at_start metadata flag")
+	}
+}
+
 func TestCompileHeaderFooterPartialUsesZeroMetricsRaisebox(t *testing.T) {
 	cfg := config.Default()
 	cfg.HeaderFooter.Enabled = true
