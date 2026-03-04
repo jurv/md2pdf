@@ -169,6 +169,52 @@ $endif$
 \let\endorigfigure\endfigure
 \renewenvironment{figure}[1][]{\origfigure[H]}{\endorigfigure}
 
+% PlantUML diagrams are emitted as bare \includegraphics calls by pandoc-plantuml.
+% Scope alignment and spacing tweaks to those generated paths only.
+$if(plantuml_align)$
+\newcommand{\mdtwoplantumlalign}{$plantuml_align$}
+$else$
+\newcommand{\mdtwoplantumlalign}{center}
+$endif$
+
+$if(plantuml_space_before_pt)$
+\newcommand{\mdtwoplantumlspacebefore}{$plantuml_space_before_pt$pt}
+$else$
+\newcommand{\mdtwoplantumlspacebefore}{6pt}
+$endif$
+
+$if(plantuml_space_after_pt)$
+\newcommand{\mdtwoplantumlspaceafter}{$plantuml_space_after_pt$pt}
+$else$
+\newcommand{\mdtwoplantumlspaceafter}{0pt}
+$endif$
+
+\let\mdtwoorigincludegraphics\includegraphics
+\ExplSyntaxOn
+\cs_new_protected:Npn \mdtwo_includegraphics_with_plantuml_style:nn #1 #2
+  {
+    \str_if_in:nnTF {#2} {plantuml-images/}
+      {
+        \par\vspace*{\mdtwoplantumlspacebefore}
+        \str_case:nnF { \mdtwoplantumlalign }
+          {
+            {left}{\begin{flushleft}\mdtwoorigincludegraphics[#1]{#2}\end{flushleft}}
+            {right}{\begin{flushright}\mdtwoorigincludegraphics[#1]{#2}\end{flushright}}
+          }
+          {\begin{center}\mdtwoorigincludegraphics[#1]{#2}\end{center}}
+        \vspace{\mdtwoplantumlspaceafter}
+      }
+      {
+        \mdtwoorigincludegraphics[#1]{#2}
+      }
+  }
+\cs_new_protected:Npn \mdtwoincludegraphicswithplantumlstyle #1 #2
+  {
+    \mdtwo_includegraphics_with_plantuml_style:nn {#1} {#2}
+  }
+\ExplSyntaxOff
+\renewcommand{\includegraphics}[2][]{\mdtwoincludegraphicswithplantumlstyle{#1}{#2}}
+
 % Common Unicode fallbacks for robust PDF generation.
 \newunicodechar{‑}{\mbox{-}}
 \newunicodechar{’}{'}

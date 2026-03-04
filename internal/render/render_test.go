@@ -101,6 +101,29 @@ func TestMetadataArgsIncludesBlockQuoteStyle(t *testing.T) {
 	}
 }
 
+func TestMetadataArgsIncludesPlantUMLStyle(t *testing.T) {
+	cfg := config.Default()
+	cfg.Style.PlantUML.Align = "right"
+	cfg.Style.PlantUML.SpaceBeforePt = 9
+	cfg.Style.PlantUML.SpaceAfterPt = 3
+
+	args, err := metadataArgs(cfg, "/tmp", false, t.TempDir())
+	if err != nil {
+		t.Fatalf("metadataArgs returned error: %v", err)
+	}
+
+	joined := strings.Join(args, " ")
+	for _, needle := range []string{
+		"plantuml_align=right",
+		"plantuml_space_before_pt=9",
+		"plantuml_space_after_pt=3",
+	} {
+		if !strings.Contains(joined, needle) {
+			t.Fatalf("expected metadata to contain %q, got %q", needle, joined)
+		}
+	}
+}
+
 func TestMetadataArgsCoverImageImplicitBuiltinMode(t *testing.T) {
 	cfg := config.Default()
 	cfg.Cover.Mode = "none"
@@ -210,6 +233,20 @@ func TestDefaultTemplateDefinesHeadingStyleHooks(t *testing.T) {
 		`\newcommand{\mdtwohoneStyle}{`,
 		`$if(heading_style_enabled)$`,
 		`$if(heading_h2_space_before_pt)$`,
+	} {
+		if !strings.Contains(defaultTemplate, needle) {
+			t.Fatalf("default template missing %q", needle)
+		}
+	}
+}
+
+func TestDefaultTemplateDefinesPlantUMLStyleHooks(t *testing.T) {
+	for _, needle := range []string{
+		`\newcommand{\mdtwoplantumlalign}`,
+		`\newcommand{\mdtwoplantumlspacebefore}`,
+		`\newcommand{\mdtwoplantumlspaceafter}`,
+		`\str_if_in:nnTF {#2} {plantuml-images/}`,
+		`\mdtwo_includegraphics_with_plantuml_style:nn`,
 	} {
 		if !strings.Contains(defaultTemplate, needle) {
 			t.Fatalf("default template missing %q", needle)

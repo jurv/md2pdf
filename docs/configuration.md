@@ -161,6 +161,9 @@ The front matter schema is identical to the config file schema. The table below 
 | `style.blockquote.bar_width_pt`      | number           | `0.8`               | `>= 0`                                                                | Left bar width for blockquotes (points).                                                                         |
 | `style.blockquote.gap_pt`            | number           | `5`                 | `>= 0`                                                                | Horizontal gap between quote bar and quote text (points).                                                        |
 | `style.blockquote.padding_pt`        | number           | `2`                 | `>= 0`                                                                | Inner padding applied to quote background (points).                                                              |
+| `style.plantuml.align`               | string           | `center`            | `left`, `center`, `right`                                             | Horizontal alignment for PlantUML-generated images (`plantuml-images/...`) in the default template.            |
+| `style.plantuml.space_before_pt`     | number           | `6`                 | `>= 0`                                                                | Extra vertical spacing inserted before PlantUML-generated images (points).                                       |
+| `style.plantuml.space_after_pt`      | number           | `0`                 | `>= 0`                                                                | Extra vertical spacing inserted after PlantUML-generated images (points).                                        |
 | `header_footer.enabled`              | boolean          | `false`             | `true` or `false`                                                     | Enables rich header/footer rendering in the default template.                                                    |
 | `header_footer.apply_on`             | string           | `toc_and_body`      | `body_only`, `toc_and_body`, `all_pages`                              | Controls where the header/footer style is activated.                                                             |
 | `header_footer.side_offset_left_pt`  | number           | `20`                | `>= 0`                                                                | Extends header/footer rendering into the left page margin (`fancyhfoffset`).                                     |
@@ -193,6 +196,10 @@ With LaTeX `article`, `h5` and `h6` are both rendered as `subparagraph`; if both
 ### Default blockquote behavior
 
 With the embedded template, Markdown blockquotes (`>`) are rendered with a thin left bar, lighter text, and a subtle background. You can tune bar color, text color, background, bar width, spacing, and padding through `style.blockquote.*`.
+
+### PlantUML image layout
+
+With the embedded template, images produced by `pandoc-plantuml` (stored under `plantuml-images/`) can be styled through `style.plantuml.*`. By default they are centered and given a small spacing before the diagram.
 
 ### Full-bleed cover image
 
@@ -327,6 +334,10 @@ style:
     bar_width_pt: 0.8
     gap_pt: 5
     padding_pt: 2
+  plantuml:
+    align: center
+    space_before_pt: 6
+    space_after_pt: 0
 header_footer:
   enabled: true
   apply_on: toc_and_body

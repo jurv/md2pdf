@@ -240,6 +240,11 @@ func metadataArgs(cfg config.Config, baseDir string, tocEnabled bool, workDir st
 		[2]string{"blockquote_gap_pt", strconv.FormatFloat(cfg.Style.BlockQuote.GapPt, 'f', -1, 64)},
 		[2]string{"blockquote_padding_pt", strconv.FormatFloat(cfg.Style.BlockQuote.PaddingPt, 'f', -1, 64)},
 	)
+	pairs = append(pairs,
+		[2]string{"plantuml_align", cfg.Style.PlantUML.Align},
+		[2]string{"plantuml_space_before_pt", strconv.FormatFloat(cfg.Style.PlantUML.SpaceBeforePt, 'f', -1, 64)},
+		[2]string{"plantuml_space_after_pt", strconv.FormatFloat(cfg.Style.PlantUML.SpaceAfterPt, 'f', -1, 64)},
+	)
 	switch cfg.Title.RenderMode {
 	case "inline":
 		pairs = append(pairs, [2]string{"title_render_inline", "true"})

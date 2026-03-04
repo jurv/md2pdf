@@ -91,6 +91,7 @@ type StyleConfig struct {
 	Links      LinksStyleConfig      `yaml:"links"`
 	Headings   HeadingStyleConfig    `yaml:"headings"`
 	BlockQuote BlockQuoteStyleConfig `yaml:"blockquote"`
+	PlantUML   PlantUMLStyleConfig   `yaml:"plantuml"`
 }
 
 type ColorsConfig struct {
@@ -132,6 +133,12 @@ type BlockQuoteStyleConfig struct {
 	BarWidthPt      float64 `yaml:"bar_width_pt"`
 	GapPt           float64 `yaml:"gap_pt"`
 	PaddingPt       float64 `yaml:"padding_pt"`
+}
+
+type PlantUMLStyleConfig struct {
+	Align         string  `yaml:"align"`
+	SpaceBeforePt float64 `yaml:"space_before_pt"`
+	SpaceAfterPt  float64 `yaml:"space_after_pt"`
 }
 
 type HeaderFooterConfig struct {
@@ -251,6 +258,11 @@ func Default() Config {
 				BarWidthPt:      0.8,
 				GapPt:           5,
 				PaddingPt:       2,
+			},
+			PlantUML: PlantUMLStyleConfig{
+				Align:         "center",
+				SpaceBeforePt: 6,
+				SpaceAfterPt:  0,
 			},
 		},
 		HeaderFooter: HeaderFooterConfig{
@@ -382,6 +394,9 @@ func (c *Config) Validate() error {
 	if err := validateBlockQuoteStyle(c.Style.BlockQuote, "style.blockquote"); err != nil {
 		return err
 	}
+	if err := validatePlantUMLStyle(c.Style.PlantUML, "style.plantuml"); err != nil {
+		return err
+	}
 	if err := validateLinksStyle(c.Style.Links, "style.links"); err != nil {
 		return err
 	}
@@ -487,6 +502,21 @@ func validateBlockQuoteStyle(style BlockQuoteStyleConfig, prefix string) error {
 	}
 	if style.PaddingPt < 0 {
 		return fmt.Errorf("%s.padding_pt must be >= 0", prefix)
+	}
+	return nil
+}
+
+func validatePlantUMLStyle(style PlantUMLStyleConfig, prefix string) error {
+	switch style.Align {
+	case "", "left", "center", "right":
+	default:
+		return fmt.Errorf("%s.align must be left, center, or right", prefix)
+	}
+	if style.SpaceBeforePt < 0 {
+		return fmt.Errorf("%s.space_before_pt must be >= 0", prefix)
+	}
+	if style.SpaceAfterPt < 0 {
+		return fmt.Errorf("%s.space_after_pt must be >= 0", prefix)
 	}
 	return nil
 }
