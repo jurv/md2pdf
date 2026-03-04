@@ -78,10 +78,12 @@ func Load(opts LoadOptions) (Config, error) {
 func applyCompatibilityAliases(merged map[string]any) {
 	tocAny, ok := merged["toc"]
 	if !ok {
+		applyHeadingStyleAliases(merged)
 		return
 	}
 	tocMap, ok := tocAny.(map[string]any)
 	if !ok {
+		applyHeadingStyleAliases(merged)
 		return
 	}
 
@@ -94,6 +96,61 @@ func applyCompatibilityAliases(merged map[string]any) {
 		if toLevel, ok := tocMap["to_level"]; ok {
 			tocMap["depth"] = toLevel
 		}
+	}
+	applyHeadingStyleAliases(merged)
+}
+
+func applyHeadingStyleAliases(merged map[string]any) {
+	styleAny, ok := merged["style"]
+	if !ok {
+		return
+	}
+	styleMap, ok := styleAny.(map[string]any)
+	if !ok {
+		return
+	}
+	headingsAny, ok := styleMap["headings"]
+	if !ok {
+		return
+	}
+	headingsMap, ok := headingsAny.(map[string]any)
+	if !ok {
+		return
+	}
+
+	ensureLevelMap := func(level string) map[string]any {
+		existing, ok := headingsMap[level]
+		if ok {
+			if cast, castOK := existing.(map[string]any); castOK {
+				return cast
+			}
+		}
+		fresh := map[string]any{}
+		headingsMap[level] = fresh
+		return fresh
+	}
+
+	if rawColor, ok := headingsMap["color"]; ok {
+		for _, level := range []string{"h1", "h2", "h3", "h4", "h5", "h6"} {
+			levelMap := ensureLevelMap(level)
+			if _, exists := levelMap["color"]; !exists {
+				levelMap["color"] = rawColor
+			}
+		}
+		delete(headingsMap, "color")
+	}
+
+	for _, level := range []string{"h1", "h2", "h3", "h4", "h5", "h6"} {
+		legacySizeKey := level + "_size_pt"
+		legacySizeValue, ok := headingsMap[legacySizeKey]
+		if !ok {
+			continue
+		}
+		levelMap := ensureLevelMap(level)
+		if _, exists := levelMap["size_pt"]; !exists {
+			levelMap["size_pt"] = legacySizeValue
+		}
+		delete(headingsMap, legacySizeKey)
 	}
 }
 

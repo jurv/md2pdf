@@ -88,6 +88,8 @@ type AssetsConfig struct {
 type StyleConfig struct {
 	Colors     ColorsConfig          `yaml:"colors"`
 	Fonts      FontsConfig           `yaml:"fonts"`
+	Links      LinksStyleConfig      `yaml:"links"`
+	Headings   HeadingStyleConfig    `yaml:"headings"`
 	BlockQuote BlockQuoteStyleConfig `yaml:"blockquote"`
 }
 
@@ -98,6 +100,29 @@ type ColorsConfig struct {
 type FontsConfig struct {
 	Body    string `yaml:"body"`
 	Heading string `yaml:"heading"`
+}
+
+type LinksStyleConfig struct {
+	Color         string `yaml:"color"`
+	URLColor      string `yaml:"url_color"`
+	CitationColor string `yaml:"citation_color"`
+	TOCColor      string `yaml:"toc_color"`
+}
+
+type HeadingStyleConfig struct {
+	H1 HeadingLevelStyleConfig `yaml:"h1"`
+	H2 HeadingLevelStyleConfig `yaml:"h2"`
+	H3 HeadingLevelStyleConfig `yaml:"h3"`
+	H4 HeadingLevelStyleConfig `yaml:"h4"`
+	H5 HeadingLevelStyleConfig `yaml:"h5"`
+	H6 HeadingLevelStyleConfig `yaml:"h6"`
+}
+
+type HeadingLevelStyleConfig struct {
+	Color         string   `yaml:"color"`
+	SizePt        *float64 `yaml:"size_pt"`
+	SpaceBeforePt *float64 `yaml:"space_before_pt"`
+	SpaceAfterPt  *float64 `yaml:"space_after_pt"`
 }
 
 type BlockQuoteStyleConfig struct {
@@ -213,6 +238,12 @@ func Default() Config {
 			},
 		},
 		Style: StyleConfig{
+			Links: LinksStyleConfig{
+				Color:         "blue",
+				URLColor:      "blue",
+				CitationColor: "blue",
+				TOCColor:      "",
+			},
 			BlockQuote: BlockQuoteStyleConfig{
 				BarColor:        "#E6E6E6",
 				TextColor:       "#6F6F6F",
@@ -351,6 +382,12 @@ func (c *Config) Validate() error {
 	if err := validateBlockQuoteStyle(c.Style.BlockQuote, "style.blockquote"); err != nil {
 		return err
 	}
+	if err := validateLinksStyle(c.Style.Links, "style.links"); err != nil {
+		return err
+	}
+	if err := validateHeadingStyle(c.Style.Headings, "style.headings"); err != nil {
+		return err
+	}
 
 	switch c.HeaderFooter.ApplyOn {
 	case "body_only", "toc_and_body", "all_pages":
@@ -450,6 +487,49 @@ func validateBlockQuoteStyle(style BlockQuoteStyleConfig, prefix string) error {
 	}
 	if style.PaddingPt < 0 {
 		return fmt.Errorf("%s.padding_pt must be >= 0", prefix)
+	}
+	return nil
+}
+
+func validateHeadingStyle(style HeadingStyleConfig, prefix string) error {
+	levels := map[string]HeadingLevelStyleConfig{
+		"h1": style.H1,
+		"h2": style.H2,
+		"h3": style.H3,
+		"h4": style.H4,
+		"h5": style.H5,
+		"h6": style.H6,
+	}
+	for level, cfg := range levels {
+		levelPrefix := prefix + "." + level
+		if err := validateColorValue(cfg.Color, levelPrefix+".color"); err != nil {
+			return err
+		}
+		if cfg.SizePt != nil && *cfg.SizePt <= 0 {
+			return fmt.Errorf("%s.size_pt must be > 0", levelPrefix)
+		}
+		if cfg.SpaceBeforePt != nil && *cfg.SpaceBeforePt < 0 {
+			return fmt.Errorf("%s.space_before_pt must be >= 0", levelPrefix)
+		}
+		if cfg.SpaceAfterPt != nil && *cfg.SpaceAfterPt < 0 {
+			return fmt.Errorf("%s.space_after_pt must be >= 0", levelPrefix)
+		}
+	}
+	return nil
+}
+
+func validateLinksStyle(style LinksStyleConfig, prefix string) error {
+	if err := validateColorValue(style.Color, prefix+".color"); err != nil {
+		return err
+	}
+	if err := validateColorValue(style.URLColor, prefix+".url_color"); err != nil {
+		return err
+	}
+	if err := validateColorValue(style.CitationColor, prefix+".citation_color"); err != nil {
+		return err
+	}
+	if err := validateColorValue(style.TOCColor, prefix+".toc_color"); err != nil {
+		return err
 	}
 	return nil
 }

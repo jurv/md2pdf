@@ -149,6 +149,71 @@ func metadataArgs(cfg config.Config, baseDir string, tocEnabled bool, workDir st
 	if cfg.Style.Fonts.Heading != "" {
 		pairs = append(pairs, [2]string{"font_heading", cfg.Style.Fonts.Heading})
 	}
+	if cfg.Style.Links.Color != "" {
+		model, value := latexColor(cfg.Style.Links.Color)
+		pairs = append(pairs, [2]string{"hyperref_link_color_value", value})
+		if model != "" {
+			pairs = append(pairs, [2]string{"hyperref_link_color_model", model})
+		}
+	}
+	if cfg.Style.Links.URLColor != "" {
+		model, value := latexColor(cfg.Style.Links.URLColor)
+		pairs = append(pairs, [2]string{"hyperref_url_color_value", value})
+		if model != "" {
+			pairs = append(pairs, [2]string{"hyperref_url_color_model", model})
+		}
+	}
+	if cfg.Style.Links.CitationColor != "" {
+		model, value := latexColor(cfg.Style.Links.CitationColor)
+		pairs = append(pairs, [2]string{"hyperref_cite_color_value", value})
+		if model != "" {
+			pairs = append(pairs, [2]string{"hyperref_cite_color_model", model})
+		}
+	}
+	if cfg.Style.Links.TOCColor != "" {
+		model, value := latexColor(cfg.Style.Links.TOCColor)
+		pairs = append(pairs, [2]string{"hyperref_toc_link_color_value", value})
+		if model != "" {
+			pairs = append(pairs, [2]string{"hyperref_toc_link_color_model", model})
+		}
+	}
+	headingStyleEnabled := false
+	type headingStyleLevel struct {
+		key string
+		cfg config.HeadingLevelStyleConfig
+	}
+	for _, level := range []headingStyleLevel{
+		{key: "h1", cfg: cfg.Style.Headings.H1},
+		{key: "h2", cfg: cfg.Style.Headings.H2},
+		{key: "h3", cfg: cfg.Style.Headings.H3},
+		{key: "h4", cfg: cfg.Style.Headings.H4},
+		{key: "h5", cfg: cfg.Style.Headings.H5},
+		{key: "h6", cfg: cfg.Style.Headings.H6},
+	} {
+		if strings.TrimSpace(level.cfg.Color) != "" {
+			model, value := latexColor(level.cfg.Color)
+			pairs = append(pairs, [2]string{"heading_" + level.key + "_color_value", value})
+			if model != "" {
+				pairs = append(pairs, [2]string{"heading_" + level.key + "_color_model", model})
+			}
+			headingStyleEnabled = true
+		}
+		if level.cfg.SizePt != nil {
+			pairs = append(pairs, [2]string{"heading_" + level.key + "_size_pt", strconv.FormatFloat(*level.cfg.SizePt, 'f', -1, 64)})
+			headingStyleEnabled = true
+		}
+		if level.cfg.SpaceBeforePt != nil {
+			pairs = append(pairs, [2]string{"heading_" + level.key + "_space_before_pt", strconv.FormatFloat(*level.cfg.SpaceBeforePt, 'f', -1, 64)})
+			headingStyleEnabled = true
+		}
+		if level.cfg.SpaceAfterPt != nil {
+			pairs = append(pairs, [2]string{"heading_" + level.key + "_space_after_pt", strconv.FormatFloat(*level.cfg.SpaceAfterPt, 'f', -1, 64)})
+			headingStyleEnabled = true
+		}
+	}
+	if headingStyleEnabled {
+		pairs = append(pairs, [2]string{"heading_style_enabled", "true"})
+	}
 	if cfg.Style.BlockQuote.BarColor != "" {
 		model, value := latexColor(cfg.Style.BlockQuote.BarColor)
 		pairs = append(pairs, [2]string{"blockquote_bar_color_value", value})

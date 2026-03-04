@@ -173,6 +173,91 @@ func TestDefaultTemplateSkipsInlineTitleWhenBuiltinCoverIsEnabled(t *testing.T) 
 	}
 }
 
+func TestMetadataArgsIncludesHeadingStyle(t *testing.T) {
+	cfg := config.Default()
+	cfg.Style.Headings.H1.Color = "#1F4E79"
+	h2 := 18.0
+	spaceBefore := 12.0
+	spaceAfter := 8.0
+	cfg.Style.Headings.H2.SizePt = &h2
+	cfg.Style.Headings.H2.SpaceBeforePt = &spaceBefore
+	cfg.Style.Headings.H2.SpaceAfterPt = &spaceAfter
+
+	args, err := metadataArgs(cfg, "/tmp", false, t.TempDir())
+	if err != nil {
+		t.Fatalf("metadataArgs returned error: %v", err)
+	}
+
+	joined := strings.Join(args, " ")
+	for _, needle := range []string{
+		"heading_style_enabled=true",
+		"heading_h1_color_model=HTML",
+		"heading_h1_color_value=1F4E79",
+		"heading_h2_size_pt=18",
+		"heading_h2_space_before_pt=12",
+		"heading_h2_space_after_pt=8",
+	} {
+		if !strings.Contains(joined, needle) {
+			t.Fatalf("expected metadata to contain %q, got %q", needle, joined)
+		}
+	}
+}
+
+func TestDefaultTemplateDefinesHeadingStyleHooks(t *testing.T) {
+	for _, needle := range []string{
+		`\usepackage{sectsty}`,
+		`\usepackage{titlesec}`,
+		`\newcommand{\mdtwohoneStyle}{`,
+		`$if(heading_style_enabled)$`,
+		`$if(heading_h2_space_before_pt)$`,
+	} {
+		if !strings.Contains(defaultTemplate, needle) {
+			t.Fatalf("default template missing %q", needle)
+		}
+	}
+}
+
+func TestMetadataArgsIncludesLinkStyle(t *testing.T) {
+	cfg := config.Default()
+	cfg.Style.Links.Color = "#1F4E79"
+	cfg.Style.Links.URLColor = "teal"
+	cfg.Style.Links.CitationColor = "#A94442"
+	cfg.Style.Links.TOCColor = "#2E86C1"
+
+	args, err := metadataArgs(cfg, "/tmp", true, t.TempDir())
+	if err != nil {
+		t.Fatalf("metadataArgs returned error: %v", err)
+	}
+
+	joined := strings.Join(args, " ")
+	for _, needle := range []string{
+		"hyperref_link_color_model=HTML",
+		"hyperref_link_color_value=1F4E79",
+		"hyperref_url_color_value=teal",
+		"hyperref_cite_color_model=HTML",
+		"hyperref_cite_color_value=A94442",
+		"hyperref_toc_link_color_model=HTML",
+		"hyperref_toc_link_color_value=2E86C1",
+	} {
+		if !strings.Contains(joined, needle) {
+			t.Fatalf("expected metadata to contain %q, got %q", needle, joined)
+		}
+	}
+}
+
+func TestDefaultTemplateDefinesLinkStyleHooks(t *testing.T) {
+	for _, needle := range []string{
+		`mdtwolinkcolor`,
+		`mdtwotoclinkcolor`,
+		`$if(hyperref_link_color_value)$`,
+		`\hypersetup{linkcolor=mdtwotoclinkcolor}`,
+	} {
+		if !strings.Contains(defaultTemplate, needle) {
+			t.Fatalf("default template missing %q", needle)
+		}
+	}
+}
+
 func TestMetadataArgsCoverImageSimpleModeKeepsAllPagesHeaderFooterStart(t *testing.T) {
 	cfg := config.Default()
 	cfg.Cover.Mode = "none"

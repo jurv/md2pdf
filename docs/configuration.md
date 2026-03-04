@@ -147,6 +147,14 @@ The front matter schema is identical to the config file schema. The table below 
 | `style.colors.primary`               | string or `null` | empty               | Any string (typically hex color)                                      | Passed as metadata key `color_primary` (template-dependent).                                                     |
 | `style.fonts.body`                   | string or `null` | empty               | Any string                                                            | Passed as metadata key `font_body` (template-dependent).                                                         |
 | `style.fonts.heading`                | string or `null` | empty               | Any string                                                            | Passed as metadata key `font_heading` (template-dependent).                                                      |
+| `style.links.color`                  | string           | `blue`              | named color or `#RRGGBB`                                              | Global color for internal links (including section refs and non-TOC internal links).                            |
+| `style.links.url_color`              | string           | `blue`              | named color or `#RRGGBB`                                              | Color for URL links.                                                                                             |
+| `style.links.citation_color`         | string           | `blue`              | named color or `#RRGGBB`                                              | Color for citation links.                                                                                        |
+| `style.links.toc_color`              | string or `null` | empty               | named color or `#RRGGBB`                                              | Color for ToC links only. If unset, ToC uses `style.links.color`.                                               |
+| `style.headings.h<1..6>.color`       | string or `null` | empty               | named color or `#RRGGBB`                                              | Per-level heading color (`h1`..`h6`) in the default template.                                                     |
+| `style.headings.h<1..6>.size_pt`     | number or `null` | empty               | `> 0`                                                                 | Per-level heading size in points.                                                                                |
+| `style.headings.h<1..6>.space_before_pt` | number or `null` | empty           | `>= 0`                                                                | Per-level vertical spacing before heading in points.                                                             |
+| `style.headings.h<1..6>.space_after_pt`  | number or `null` | empty           | `>= 0`                                                                | Per-level vertical spacing after heading in points.                                                              |
 | `style.blockquote.bar_color`         | string           | `#E6E6E6`           | named color or `#RRGGBB`                                              | Left bar color for Markdown blockquotes in the default template.                                                 |
 | `style.blockquote.text_color`        | string           | `#6F6F6F`           | named color or `#RRGGBB`                                              | Text color for Markdown blockquotes in the default template.                                                     |
 | `style.blockquote.background_color`  | string           | `#F7F7F7`           | named color or `#RRGGBB`                                              | Background color for Markdown blockquotes in the default template.                                               |
@@ -177,6 +185,10 @@ The front matter schema is identical to the config file schema. The table below 
 ### Default heading behavior
 
 Out of the box, the first entrypoint `#` heading is used as the document title and removed from body content. Heading numbering starts at `##` and ends at `###` (`1`, `1.1`, `2`, ...). By default, ToC bounds mirror numbering bounds (`h2..h3`), so `#` and `####+` headings are automatically marked as unlisted.
+
+Heading visual style remains LaTeX default unless `style.headings.*` is set. This means existing documents keep the same heading appearance when upgrading.
+For backward compatibility, legacy keys (`style.headings.color`, `style.headings.h2_size_pt`, etc.) are still accepted and mapped to the new per-level format.
+With LaTeX `article`, `h5` and `h6` are both rendered as `subparagraph`; if both are configured, `h6` settings take precedence.
 
 ### Default blockquote behavior
 
@@ -272,6 +284,42 @@ style:
   fonts:
     body: "Open Sans"
     heading: "Open Sans"
+  links:
+    color: "blue"
+    url_color: "blue"
+    citation_color: "blue"
+    toc_color: null
+  headings:
+    h1:
+      color: null
+      size_pt: null
+      space_before_pt: null
+      space_after_pt: null
+    h2:
+      color: null
+      size_pt: null
+      space_before_pt: null
+      space_after_pt: null
+    h3:
+      color: null
+      size_pt: null
+      space_before_pt: null
+      space_after_pt: null
+    h4:
+      color: null
+      size_pt: null
+      space_before_pt: null
+      space_after_pt: null
+    h5:
+      color: null
+      size_pt: null
+      space_before_pt: null
+      space_after_pt: null
+    h6:
+      color: null
+      size_pt: null
+      space_before_pt: null
+      space_after_pt: null
   blockquote:
     bar_color: "#E6E6E6"
     text_color: "#6F6F6F"
