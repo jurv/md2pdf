@@ -1,15 +1,32 @@
 \documentclass[11pt,a4paper]{article}
 
 \usepackage{ifxetex,ifluatex}
+\newcommand{\mdtwoheadingfontstyle}{}
 \ifxetex
   \usepackage{fontspec}
+  $if(font_body)$
+  \setmainfont{$font_body$}
+  $else$
   \setmainfont{Open Sans}
+  $endif$
   \setmonofont{DejaVu Sans Mono}[Scale=MatchLowercase]
+  $if(font_heading)$
+  \newfontfamily\mdtwoheadingfont{$font_heading$}
+  \renewcommand{\mdtwoheadingfontstyle}{\mdtwoheadingfont}
+  $endif$
 \else
   \ifluatex
     \usepackage{fontspec}
+    $if(font_body)$
+    \setmainfont{$font_body$}
+    $else$
     \setmainfont{Open Sans}
+    $endif$
     \setmonofont{DejaVu Sans Mono}[Scale=MatchLowercase]
+    $if(font_heading)$
+    \newfontfamily\mdtwoheadingfont{$font_heading$}
+    \renewcommand{\mdtwoheadingfontstyle}{\mdtwoheadingfont}
+    $endif$
   \else
     \usepackage[T1]{fontenc}
     \usepackage[utf8]{inputenc}
@@ -18,6 +35,7 @@
 \fi
 
 \usepackage{geometry}
+\usepackage{amssymb}
 \usepackage{xurl}
 \usepackage{hyperref}
 \usepackage{xcolor}
@@ -43,10 +61,26 @@ $endif$
 \usepackage[font=small, labelfont={bf}]{caption}
 
 \geometry{margin=2.5cm}
+\colorlet{mdtwotitlecolor}{black}
+\colorlet{mdtwoheadingthemecolor}{black}
 \colorlet{mdtwolinkcolor}{blue}
 \colorlet{mdtwourlcolor}{blue}
 \colorlet{mdtwocitecolor}{blue}
 \colorlet{mdtwotoclinkcolor}{mdtwolinkcolor}
+
+$if(color_primary_value)$
+$if(color_primary_model)$
+\definecolor{mdtwoprimarycolor}{$color_primary_model$}{$color_primary_value$}
+$else$
+\colorlet{mdtwoprimarycolor}{$color_primary_value$}
+$endif$
+\colorlet{mdtwotitlecolor}{mdtwoprimarycolor}
+\colorlet{mdtwoheadingthemecolor}{mdtwoprimarycolor}
+\colorlet{mdtwolinkcolor}{mdtwoprimarycolor}
+\colorlet{mdtwourlcolor}{mdtwoprimarycolor}
+\colorlet{mdtwocitecolor}{mdtwoprimarycolor}
+\colorlet{mdtwotoclinkcolor}{mdtwoprimarycolor}
+$endif$
 
 $if(hyperref_link_color_value)$
 $if(hyperref_link_color_model)$
@@ -83,6 +117,10 @@ $endif$
 \setlength{\parskip}{0.6em}
 \emergencystretch=2em
 
+% Pandoc may emit \hl{...} from HTML spans like <span class="mark">...</span>.
+% Provide a safe fallback when no highlight package defines \hl.
+\providecommand{\hl}[1]{#1}
+
 % Global image safety defaults to prevent page overflow.
 \setkeys{Gin}{width=\linewidth,height=0.8\textheight,keepaspectratio}
 
@@ -95,7 +133,6 @@ $endif$
 
 % Shaded environment for Pandoc code blocks.
 \definecolor{shadecolor}{RGB}{245,245,245}
-\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
 
 % Code blocks: wrap long lines and keep line numbers visible.
 \definecolor{codenumbers}{gray}{0.70}
@@ -120,6 +157,9 @@ $highlighting-macros$
 $endif$
 
 \makeatletter
+\@ifundefined{Shaded}{%
+  \newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+}{}
 \@ifundefined{Highlighting}{%
   \DefineVerbatimEnvironment{Highlighting}{Verbatim}{
     breaklines=true,
@@ -215,15 +255,10 @@ $endif$
 \ExplSyntaxOff
 \renewcommand{\includegraphics}[2][]{\mdtwoincludegraphicswithplantumlstyle{#1}{#2}}
 
-% Common Unicode fallbacks for robust PDF generation.
-\newunicodechar{‑}{\mbox{-}}
-\newunicodechar{’}{'}
-\newunicodechar{“}{"}
-\newunicodechar{”}{"}
-\newunicodechar{→}{\ensuremath{\rightarrow}}
-\newunicodechar{↔}{\ensuremath{\leftrightarrow}}
-\newunicodechar{•}{\textbullet}
-\newunicodechar{⚠}{\textbf{!}}
+% Common Unicode fallbacks and symbol replacements for robust PDF generation.
+$if(unicode_symbols_partial)$
+\input{$unicode_symbols_partial$}
+$endif$
 
 % Cover background helpers (first page full-bleed image support).
 \newsavebox{\mdtwocoverimgbox}
@@ -311,9 +346,38 @@ $endif$
 }
 \makeatother
 
+\colorlet{mdtwocoverTitleColor}{mdtwotitlecolor}
+$if(cover_title_color_value)$
+$if(cover_title_color_model)$
+\definecolor{mdtwoexplicitcovertitlecolor}{$cover_title_color_model$}{$cover_title_color_value$}
+\colorlet{mdtwocoverTitleColor}{mdtwoexplicitcovertitlecolor}
+$else$
+\colorlet{mdtwocoverTitleColor}{$cover_title_color_value$}
+$endif$
+$endif$
+
+\newcommand{\mdtwodocumenttitleblock}{%
+{\mdtwoheadingfontstyle\Huge\bfseries\textcolor{mdtwotitlecolor}{$title$}\par}
+$if(author)$
+\vspace{1cm}
+{\Large $for(author)$$author$$sep$ \\ $endfor$\par}
+$endif$
+$if(date)$
+\vspace{0.5cm}
+{\large $date$\par}
+$endif$
+}
+
 $if(heading_style_enabled)$
 \newcommand{\mdtwoheadingsize}[1]{\fontsize{#1pt}{\fpeval{#1*1.2}pt}\selectfont}
+\newcommand{\mdtwoheadingbaseStyle}{%
+\mdtwoheadingfontstyle
+$if(color_primary_value)$
+\color{mdtwoheadingthemecolor}
+$endif$
+}
 \newcommand{\mdtwohoneStyle}{%
+\mdtwoheadingbaseStyle
 $if(heading_h1_color_value)$
 $if(heading_h1_color_model)$
 \color[$heading_h1_color_model$]{$heading_h1_color_value$}
@@ -325,12 +389,7 @@ $if(heading_h1_size_pt)$
 \mdtwoheadingsize{$heading_h1_size_pt$}
 $endif$
 }
-$if(heading_h1_color_value)$
 \sectionfont{\mdtwohoneStyle}
-$endif$
-$if(heading_h1_size_pt)$
-\sectionfont{\mdtwohoneStyle}
-$endif$
 \newcommand{\mdtwohoneBefore}{
 $if(heading_h1_space_before_pt)$
 $heading_h1_space_before_pt$pt
@@ -353,6 +412,7 @@ $if(heading_h1_space_after_pt)$
 $endif$
 
 \newcommand{\mdtwohtwoStyle}{%
+\mdtwoheadingbaseStyle
 $if(heading_h2_color_value)$
 $if(heading_h2_color_model)$
 \color[$heading_h2_color_model$]{$heading_h2_color_value$}
@@ -364,12 +424,7 @@ $if(heading_h2_size_pt)$
 \mdtwoheadingsize{$heading_h2_size_pt$}
 $endif$
 }
-$if(heading_h2_color_value)$
 \subsectionfont{\mdtwohtwoStyle}
-$endif$
-$if(heading_h2_size_pt)$
-\subsectionfont{\mdtwohtwoStyle}
-$endif$
 \newcommand{\mdtwohtwoBefore}{
 $if(heading_h2_space_before_pt)$
 $heading_h2_space_before_pt$pt
@@ -392,6 +447,7 @@ $if(heading_h2_space_after_pt)$
 $endif$
 
 \newcommand{\mdtwohthreeStyle}{%
+\mdtwoheadingbaseStyle
 $if(heading_h3_color_value)$
 $if(heading_h3_color_model)$
 \color[$heading_h3_color_model$]{$heading_h3_color_value$}
@@ -403,12 +459,7 @@ $if(heading_h3_size_pt)$
 \mdtwoheadingsize{$heading_h3_size_pt$}
 $endif$
 }
-$if(heading_h3_color_value)$
 \subsubsectionfont{\mdtwohthreeStyle}
-$endif$
-$if(heading_h3_size_pt)$
-\subsubsectionfont{\mdtwohthreeStyle}
-$endif$
 \newcommand{\mdtwohthreeBefore}{
 $if(heading_h3_space_before_pt)$
 $heading_h3_space_before_pt$pt
@@ -431,6 +482,7 @@ $if(heading_h3_space_after_pt)$
 $endif$
 
 \newcommand{\mdtwohfourStyle}{%
+\mdtwoheadingbaseStyle
 $if(heading_h4_color_value)$
 $if(heading_h4_color_model)$
 \color[$heading_h4_color_model$]{$heading_h4_color_value$}
@@ -442,12 +494,7 @@ $if(heading_h4_size_pt)$
 \mdtwoheadingsize{$heading_h4_size_pt$}
 $endif$
 }
-$if(heading_h4_color_value)$
 \paragraphfont{\mdtwohfourStyle}
-$endif$
-$if(heading_h4_size_pt)$
-\paragraphfont{\mdtwohfourStyle}
-$endif$
 \newcommand{\mdtwohfourBefore}{
 $if(heading_h4_space_before_pt)$
 $heading_h4_space_before_pt$pt
@@ -470,6 +517,7 @@ $if(heading_h4_space_after_pt)$
 $endif$
 
 \newcommand{\mdtwohfiveStyle}{%
+\mdtwoheadingbaseStyle
 $if(heading_h5_color_value)$
 $if(heading_h5_color_model)$
 \color[$heading_h5_color_model$]{$heading_h5_color_value$}
@@ -481,12 +529,7 @@ $if(heading_h5_size_pt)$
 \mdtwoheadingsize{$heading_h5_size_pt$}
 $endif$
 }
-$if(heading_h5_color_value)$
 \subparagraphfont{\mdtwohfiveStyle}
-$endif$
-$if(heading_h5_size_pt)$
-\subparagraphfont{\mdtwohfiveStyle}
-$endif$
 \newcommand{\mdtwohfiveBefore}{
 $if(heading_h5_space_before_pt)$
 $heading_h5_space_before_pt$pt
@@ -509,6 +552,7 @@ $if(heading_h5_space_after_pt)$
 $endif$
 
 \newcommand{\mdtwohsixStyle}{%
+\mdtwoheadingbaseStyle
 $if(heading_h6_color_value)$
 $if(heading_h6_color_model)$
 \color[$heading_h6_color_model$]{$heading_h6_color_value$}
@@ -520,12 +564,7 @@ $if(heading_h6_size_pt)$
 \mdtwoheadingsize{$heading_h6_size_pt$}
 $endif$
 }
-$if(heading_h6_color_value)$
 \subparagraphfont{\mdtwohsixStyle}
-$endif$
-$if(heading_h6_size_pt)$
-\subparagraphfont{\mdtwohsixStyle}
-$endif$
 \newcommand{\mdtwohsixBefore}{
 $if(heading_h6_space_before_pt)$
 $heading_h6_space_before_pt$pt
@@ -621,19 +660,9 @@ $if(cover_logo)$
 \par\vspace{1.2cm}
 $endif$
 \begingroup
-\LARGE\bfseries
 $if(title)$
-$if(cover_title_color_value)$
-$if(cover_title_color_model)$
-\textcolor[$cover_title_color_model$]{$cover_title_color_value$}{$title$}
-$else$
-\textcolor{$cover_title_color_value$}{$title$}
+{\mdtwoheadingfontstyle\LARGE\bfseries\textcolor{mdtwocoverTitleColor}{$title$}\par}
 $endif$
-$else$
-$title$
-$endif$
-$endif$
-\par
 \endgroup
 $if(cover_subtitle)$
 \vspace{0.8cm}
@@ -663,15 +692,7 @@ $if(title)$
 \begin{titlepage}
 \centering
 \vspace*{\fill}
-{\Huge\bfseries $title$\par}
-$if(author)$
-\vspace{1cm}
-{\Large $for(author)$$author$$sep$ \\ $endfor$\par}
-$endif$
-$if(date)$
-\vspace{0.5cm}
-{\large $date$\par}
-$endif$
+\mdtwodocumenttitleblock
 \vspace*{\fill}
 \end{titlepage}
 $endif$
@@ -680,7 +701,10 @@ $if(title_render_inline)$
 $if(title)$
 $if(cover_mode_builtin)$
 $else$
-\maketitle
+\begin{center}
+\mdtwodocumenttitleblock
+\end{center}
+\vspace{1em}
 $endif$
 $endif$
 $endif$

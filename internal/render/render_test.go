@@ -1,6 +1,7 @@
 package render
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -55,6 +56,10 @@ func TestPandocInputFormatSupportsInlineListBlockquotes(t *testing.T) {
 
 func TestDefaultTemplateDefinesStyledQuoteEnvironment(t *testing.T) {
 	for _, needle := range []string{
+		`\usepackage{amssymb}`,
+		`\providecommand{\hl}[1]{#1}`,
+		`\@ifundefined{Shaded}{%`,
+		`\input{$unicode_symbols_partial$}`,
 		`\renewenvironment{quote}{`,
 		`\newcommand{\mdtwoquotebarcolor}`,
 		`\newcommand{\mdtwoquotetextcolor}`,
@@ -67,6 +72,85 @@ func TestDefaultTemplateDefinesStyledQuoteEnvironment(t *testing.T) {
 		if !strings.Contains(defaultTemplate, needle) {
 			t.Fatalf("default template missing %q", needle)
 		}
+	}
+}
+
+func TestEmbeddedTableCodeWrapFilterTargetsTablesOnly(t *testing.T) {
+	for _, needle := range []string{
+		`function Table(tbl)`,
+		`Code = wrap_code`,
+		`pandoc.RawInline("latex", "\\path" .. delim .. text .. delim)`,
+	} {
+		if !strings.Contains(tableCodeWrapFilter, needle) {
+			t.Fatalf("embedded table code wrap filter missing %q", needle)
+		}
+	}
+}
+
+func TestWriteTableCodeWrapFilter(t *testing.T) {
+	workDir := t.TempDir()
+	path, err := writeTableCodeWrapFilter(workDir)
+	if err != nil {
+		t.Fatalf("writeTableCodeWrapFilter returned error: %v", err)
+	}
+	if !strings.HasPrefix(path, workDir) {
+		t.Fatalf("expected filter path %q to be inside %q", path, workDir)
+	}
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read written filter: %v", err)
+	}
+	if string(content) != tableCodeWrapFilter {
+		t.Fatalf("written filter content does not match embedded filter")
+	}
+}
+
+func TestCompileCodeSymbolNormalizeFilterIncludesConfiguredAliases(t *testing.T) {
+	filter, err := compileCodeSymbolNormalizeFilter(config.SymbolStyleConfig{
+		Replace: map[string]string{
+			"✅":      `\mdtwosymbolglyph{☑}{\ensuremath{\checkmark}}`,
+			"💡":      `\mdtwosymbolglyph{✦}{\textasteriskcentered}`,
+			"\uFE0F": ``,
+		},
+	})
+	if err != nil {
+		t.Fatalf("compileCodeSymbolNormalizeFilter returned error: %v", err)
+	}
+
+	for _, needle := range []string{
+		`[utf8.char(0x2705)] = utf8.char(0x2611)`,
+		`[utf8.char(0x1F4A1)] = utf8.char(0x2726)`,
+		`[utf8.char(0xFE0F)] = ""`,
+		`function Code(elem)`,
+		`function CodeBlock(elem)`,
+	} {
+		if !strings.Contains(filter, needle) {
+			t.Fatalf("expected filter to contain %q, got %q", needle, filter)
+		}
+	}
+}
+
+func TestWriteCodeSymbolNormalizeFilterSkipsWhenNoAliasesExist(t *testing.T) {
+	path, err := writeCodeSymbolNormalizeFilter(t.TempDir(), config.SymbolStyleConfig{})
+	if err != nil {
+		t.Fatalf("writeCodeSymbolNormalizeFilter returned error: %v", err)
+	}
+	if path != "" {
+		t.Fatalf("expected no filter path when there are no code symbol aliases, got %q", path)
+	}
+}
+
+func TestMetadataArgsIncludesUnicodeSymbolPartial(t *testing.T) {
+	cfg := config.Default()
+
+	args, err := metadataArgs(cfg, "/tmp", false, t.TempDir())
+	if err != nil {
+		t.Fatalf("metadataArgs returned error: %v", err)
+	}
+
+	joined := strings.Join(args, " ")
+	if !strings.Contains(joined, "unicode_symbols_partial=") {
+		t.Fatalf("expected metadata to contain unicode symbol partial path, got %q", joined)
 	}
 }
 
@@ -188,11 +272,15 @@ func TestDefaultTemplateSkipsInlineTitleWhenBuiltinCoverIsEnabled(t *testing.T) 
 	for _, needle := range []string{
 		`$if(title_render_inline)$`,
 		`$if(cover_mode_builtin)$`,
-		`\maketitle`,
+		`\mdtwodocumenttitleblock`,
+		`\textcolor{mdtwotitlecolor}{$title$}`,
 	} {
 		if !strings.Contains(defaultTemplate, needle) {
 			t.Fatalf("default template missing %q", needle)
 		}
+	}
+	if strings.Contains(defaultTemplate, `\maketitle`) {
+		t.Fatalf("default template should not rely on \\maketitle anymore")
 	}
 }
 
@@ -226,11 +314,56 @@ func TestMetadataArgsIncludesHeadingStyle(t *testing.T) {
 	}
 }
 
+func TestMetadataArgsIncludesPrimaryColorAndFontMetadata(t *testing.T) {
+	cfg := config.Default()
+	cfg.Style.Colors.Primary = "#1F4E79"
+	cfg.Style.Fonts.Body = "Calibri"
+	cfg.Style.Fonts.Heading = "Cambria"
+
+	args, err := metadataArgs(cfg, "/tmp", false, t.TempDir())
+	if err != nil {
+		t.Fatalf("metadataArgs returned error: %v", err)
+	}
+
+	joined := strings.Join(args, " ")
+	for _, needle := range []string{
+		"color_primary=#1F4E79",
+		"color_primary_model=HTML",
+		"color_primary_value=1F4E79",
+		"font_body=Calibri",
+		"font_heading=Cambria",
+		"heading_style_enabled=true",
+	} {
+		if !strings.Contains(joined, needle) {
+			t.Fatalf("expected metadata to contain %q, got %q", needle, joined)
+		}
+	}
+}
+
+func TestMetadataArgsUsesAssetsLogoCoverAsBuiltinFallback(t *testing.T) {
+	cfg := config.Default()
+	cfg.Cover.Mode = "builtin"
+	cfg.Assets.LogoCover = "assets/logo-cover.png"
+
+	args, err := metadataArgs(cfg, "/tmp/project", false, t.TempDir())
+	if err != nil {
+		t.Fatalf("metadataArgs returned error: %v", err)
+	}
+
+	joined := strings.Join(args, " ")
+	if !strings.Contains(joined, "cover_logo="+filepath.Clean("/tmp/project/assets/logo-cover.png")) {
+		t.Fatalf("expected builtin cover logo fallback in metadata, got %q", joined)
+	}
+}
+
 func TestDefaultTemplateDefinesHeadingStyleHooks(t *testing.T) {
 	for _, needle := range []string{
 		`\usepackage{sectsty}`,
 		`\usepackage{titlesec}`,
+		`\newcommand{\mdtwoheadingfontstyle}{}`,
+		`\setmainfont{$font_body$}`,
 		`\newcommand{\mdtwohoneStyle}{`,
+		`\newcommand{\mdtwoheadingbaseStyle}{`,
 		`$if(heading_style_enabled)$`,
 		`$if(heading_h2_space_before_pt)$`,
 	} {
@@ -251,6 +384,79 @@ func TestDefaultTemplateDefinesPlantUMLStyleHooks(t *testing.T) {
 		if !strings.Contains(defaultTemplate, needle) {
 			t.Fatalf("default template missing %q", needle)
 		}
+	}
+}
+
+func TestCompileUnicodeSymbolPartialIncludesConfiguredMappings(t *testing.T) {
+	partial, err := compileUnicodeSymbolPartial(config.SymbolStyleConfig{
+		FallbackFont: "Noto Sans Symbols2",
+		FallbackFor:  []string{"☐", "☑"},
+		Replace: map[string]string{
+			"✅": `\mdtwosymbolglyph{☑}{\ensuremath{\checkmark}}`,
+			"❌": `\mdtwosymbolglyph{☒}{\ensuremath{\boxtimes}}`,
+		},
+	})
+	if err != nil {
+		t.Fatalf("compileUnicodeSymbolPartial returned error: %v", err)
+	}
+
+	for _, needle := range []string{
+		`\providecommand{\mdtwosymbolglyph}[2]{#2}`,
+		`\newfontfamily\mdtwosymbolfont{Noto Sans Symbols2}`,
+		`\newunicodechar{☐}{\mdtwosymbolglyph{☐}{\ensuremath{\square}}}`,
+		`\newunicodechar{☑}{\mdtwosymbolglyph{☑}{\ensuremath{\checkmark}}}`,
+		`% U+2705`,
+		`\newunicodechar{✅}{\mdtwosymbolglyph{☑}{\ensuremath{\checkmark}}}`,
+		`% U+274C`,
+		`\newunicodechar{❌}{\mdtwosymbolglyph{☒}{\ensuremath{\boxtimes}}}`,
+	} {
+		if !strings.Contains(partial, needle) {
+			t.Fatalf("expected partial to contain %q, got %q", needle, partial)
+		}
+	}
+}
+
+func TestCompileUnicodeSymbolPartialSkipsFallbackEntryWhenExplicitReplacementExists(t *testing.T) {
+	partial, err := compileUnicodeSymbolPartial(config.SymbolStyleConfig{
+		FallbackFont: "Noto Sans Symbols2",
+		FallbackFor:  []string{"☑"},
+		Replace: map[string]string{
+			"☑": `\textbf{DONE}`,
+		},
+	})
+	if err != nil {
+		t.Fatalf("compileUnicodeSymbolPartial returned error: %v", err)
+	}
+
+	if strings.Contains(partial, `\newunicodechar{☑}{\mdtwosymbolglyph{☑}{\ensuremath{\checkmark}}}`) {
+		t.Fatalf("did not expect direct fallback definition when explicit replacement overrides it, got %q", partial)
+	}
+	if !strings.Contains(partial, `\newunicodechar{☑}{\textbf{DONE}}`) {
+		t.Fatalf("expected explicit replacement to win, got %q", partial)
+	}
+}
+
+func TestBuildCodeSymbolNormalizeMapExtractsSymbolGlyphTargets(t *testing.T) {
+	mapping := buildCodeSymbolNormalizeMap(config.SymbolStyleConfig{
+		Replace: map[string]string{
+			"✅":      `\mdtwosymbolglyph{☑}{\ensuremath{\checkmark}}`,
+			"💡":      `\mdtwosymbolglyph{✦}{\textasteriskcentered}`,
+			"→":      `\ensuremath{\rightarrow}`,
+			"\uFE0F": ``,
+		},
+	})
+
+	for source, expected := range map[string]string{
+		"✅":      "☑",
+		"💡":      "✦",
+		"\uFE0F": "",
+	} {
+		if got, ok := mapping[source]; !ok || got != expected {
+			t.Fatalf("expected %q -> %q in code normalization map, got %q (present=%v)", source, expected, got, ok)
+		}
+	}
+	if _, ok := mapping["→"]; ok {
+		t.Fatalf("did not expect non-symbol-glyph replacement to be included in code normalization map")
 	}
 }
 
@@ -284,8 +490,11 @@ func TestMetadataArgsIncludesLinkStyle(t *testing.T) {
 
 func TestDefaultTemplateDefinesLinkStyleHooks(t *testing.T) {
 	for _, needle := range []string{
+		`mdtwotitlecolor`,
+		`mdtwoheadingthemecolor`,
 		`mdtwolinkcolor`,
 		`mdtwotoclinkcolor`,
+		`$if(color_primary_value)$`,
 		`$if(hyperref_link_color_value)$`,
 		`\hypersetup{linkcolor=mdtwotoclinkcolor}`,
 	} {

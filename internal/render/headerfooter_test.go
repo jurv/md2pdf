@@ -187,3 +187,44 @@ func TestCompileHeaderFooterPartialIncludesFooterReserveAbove(t *testing.T) {
 		t.Fatalf("expected footer reserve textheight reduction, got:\n%s", out)
 	}
 }
+
+func TestCompileHeaderFooterPartialInjectsDefaultHeaderLogoFromAssets(t *testing.T) {
+	cfg := config.Default()
+	cfg.HeaderFooter.Enabled = true
+	cfg.Assets.LogoHeader = "assets/logo-header.png"
+
+	out, err := compileHeaderFooterPartial(cfg, "/tmp/project")
+	if err != nil {
+		t.Fatalf("unexpected compile error: %v", err)
+	}
+
+	if !strings.Contains(out, `\includegraphics[height=22pt,keepaspectratio]{\detokenize{/tmp/project/assets/logo-header.png}}`) {
+		t.Fatalf("expected default header logo injection, got:\n%s", out)
+	}
+}
+
+func TestCompileHeaderFooterPartialDoesNotInjectDefaultHeaderLogoWhenHeaderIsExplicit(t *testing.T) {
+	cfg := config.Default()
+	cfg.HeaderFooter.Enabled = true
+	cfg.Assets.LogoHeader = "assets/logo-header.png"
+	cfg.HeaderFooter.Header.Grid.Cells = []config.HeaderFooterCell{
+		{
+			Row:    1,
+			Col:    1,
+			AlignH: "left",
+			AlignV: "top",
+			Blocks: []config.HeaderFooterBlock{
+				{Type: "text", Value: "Custom header"},
+			},
+		},
+	}
+
+	out, err := compileHeaderFooterPartial(cfg, "/tmp/project")
+	if err != nil {
+		t.Fatalf("unexpected compile error: %v", err)
+	}
+
+	if strings.Contains(out, `/tmp/project/assets/logo-header.png`) {
+		t.Fatalf("did not expect default header logo injection when header is explicit, got:\n%s", out)
+	}
+}

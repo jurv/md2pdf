@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"gopkg.in/yaml.v3"
 )
@@ -92,6 +93,7 @@ type StyleConfig struct {
 	Headings   HeadingStyleConfig    `yaml:"headings"`
 	BlockQuote BlockQuoteStyleConfig `yaml:"blockquote"`
 	PlantUML   PlantUMLStyleConfig   `yaml:"plantuml"`
+	Symbols    SymbolStyleConfig     `yaml:"symbols"`
 }
 
 type ColorsConfig struct {
@@ -139,6 +141,12 @@ type PlantUMLStyleConfig struct {
 	Align         string  `yaml:"align"`
 	SpaceBeforePt float64 `yaml:"space_before_pt"`
 	SpaceAfterPt  float64 `yaml:"space_after_pt"`
+}
+
+type SymbolStyleConfig struct {
+	FallbackFont string            `yaml:"fallback_font"`
+	FallbackFor  []string          `yaml:"fallback_for"`
+	Replace      map[string]string `yaml:"replace"`
 }
 
 type HeaderFooterConfig struct {
@@ -239,16 +247,15 @@ func Default() Config {
 			Mode:     "none",
 			ImageFit: "cover",
 			Builtin: BuiltinCoverConfig{
-				TitleColor:      "#000000",
 				BackgroundColor: "#FFFFFF",
 				Align:           "center",
 			},
 		},
 		Style: StyleConfig{
 			Links: LinksStyleConfig{
-				Color:         "blue",
-				URLColor:      "blue",
-				CitationColor: "blue",
+				Color:         "",
+				URLColor:      "",
+				CitationColor: "",
 				TOCColor:      "",
 			},
 			BlockQuote: BlockQuoteStyleConfig{
@@ -263,6 +270,58 @@ func Default() Config {
 				Align:         "center",
 				SpaceBeforePt: 6,
 				SpaceAfterPt:  0,
+			},
+			Symbols: SymbolStyleConfig{
+				FallbackFont: "Noto Sans Symbols2",
+				FallbackFor: []string{
+					"☐",
+					"☑",
+					"☒",
+					"⚠",
+					"✓",
+					"✔",
+					"✗",
+					"✖",
+				},
+				Replace: map[string]string{
+					"‑":      `\mbox{-}`,
+					"’":      `'`,
+					"“":      `"`,
+					"”":      `"`,
+					"→":      `\ensuremath{\rightarrow}`,
+					"↔":      `\ensuremath{\leftrightarrow}`,
+					"•":      `\textbullet`,
+					"🌐":      `\mdtwosymbolglyph{◎}{\textbf{o}}`,
+					"🏁":      `\mdtwosymbolglyph{▶}{\ensuremath{\triangleright}}`,
+					"🏷":      `\mdtwosymbolglyph{▸}{\textbullet}`,
+					"🐘":      `\mdtwosymbolglyph{●}{\textbullet}`,
+					"💡":      `\mdtwosymbolglyph{✦}{\textasteriskcentered}`,
+					"💻":      `\mdtwosymbolglyph{▤}{\textbullet}`,
+					"📋":      `\mdtwosymbolglyph{☑}{\ensuremath{\checkmark}}`,
+					"📌":      `\mdtwosymbolglyph{▸}{\textbullet}`,
+					"📝":      `\mdtwosymbolglyph{✎}{\textasteriskcentered}`,
+					"📥":      `\mdtwosymbolglyph{▼}{\ensuremath{\downarrow}}`,
+					"📦":      `\mdtwosymbolglyph{▤}{\textbullet}`,
+					"🔍":      `\mdtwosymbolglyph{◎}{\textbf{o}}`,
+					"🔐":      `\mdtwosymbolglyph{●}{\textbullet}`,
+					"🔗":      `\mdtwosymbolglyph{▸}{\textbullet}`,
+					"🔧":      `\mdtwosymbolglyph{▸}{\textbullet}`,
+					"🔴":      `\mdtwosymbolglyph{●}{\textbullet}`,
+					"✅":      `\mdtwosymbolglyph{☑}{\ensuremath{\checkmark}}`,
+					"❌":      `\mdtwosymbolglyph{☒}{\ensuremath{\boxtimes}}`,
+					"🗹":      `\mdtwosymbolglyph{☑}{\ensuremath{\checkmark}}`,
+					"🗷":      `\mdtwosymbolglyph{☒}{\ensuremath{\boxtimes}}`,
+					"🗸":      `\mdtwosymbolglyph{✓}{\ensuremath{\checkmark}}`,
+					"🗵":      `\mdtwosymbolglyph{✗}{\ensuremath{\times}}`,
+					"🗄":      `\mdtwosymbolglyph{▤}{\textbullet}`,
+					"🚀":      `\mdtwosymbolglyph{▶}{\ensuremath{\triangleright}}`,
+					"🚨":      `\mdtwosymbolglyph{⚠}{\textbf{!}}`,
+					"🟠":      `\mdtwosymbolglyph{●}{\textbullet}`,
+					"🟡":      `\mdtwosymbolglyph{●}{\textbullet}`,
+					"◻":      `\mdtwosymbolglyph{☐}{\ensuremath{\square}}`,
+					"⬜":      `\mdtwosymbolglyph{☐}{\ensuremath{\square}}`,
+					"\uFE0F": ``,
+				},
 			},
 		},
 		HeaderFooter: HeaderFooterConfig{
@@ -397,6 +456,9 @@ func (c *Config) Validate() error {
 	if err := validatePlantUMLStyle(c.Style.PlantUML, "style.plantuml"); err != nil {
 		return err
 	}
+	if err := validateSymbolStyle(c.Style.Symbols, "style.symbols"); err != nil {
+		return err
+	}
 	if err := validateLinksStyle(c.Style.Links, "style.links"); err != nil {
 		return err
 	}
@@ -517,6 +579,26 @@ func validatePlantUMLStyle(style PlantUMLStyleConfig, prefix string) error {
 	}
 	if style.SpaceAfterPt < 0 {
 		return fmt.Errorf("%s.space_after_pt must be >= 0", prefix)
+	}
+	return nil
+}
+
+func validateSymbolStyle(style SymbolStyleConfig, prefix string) error {
+	if strings.ContainsRune(style.FallbackFont, '\n') {
+		return fmt.Errorf("%s.fallback_font must be a single-line font name", prefix)
+	}
+	for i, symbol := range style.FallbackFor {
+		if utf8.RuneCountInString(symbol) != 1 {
+			return fmt.Errorf("%s.fallback_for[%d] must contain exactly one Unicode character", prefix, i)
+		}
+	}
+	for symbol, replacement := range style.Replace {
+		if utf8.RuneCountInString(symbol) != 1 {
+			return fmt.Errorf("%s.replace keys must contain exactly one Unicode character", prefix)
+		}
+		if strings.ContainsRune(replacement, '\n') {
+			return fmt.Errorf("%s.replace[%q] must be a single-line LaTeX snippet", prefix, symbol)
+		}
 	}
 	return nil
 }

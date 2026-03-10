@@ -135,22 +135,22 @@ The front matter schema is identical to the config file schema. The table below 
 | `cover.image`                        | string or `null` | empty               | File path                                                             | Full-bleed image for page 1. With `cover.mode: none`, it decorates page 1 background without adding a new page.   |
 | `cover.image_fit`                    | string           | `cover`             | `cover`, `contain`, `stretch`                                         | Fit behavior for `cover.image` (`cover` crops, `contain` preserves full image, `stretch` fills with distortion). |
 | `cover.builtin.logo`                 | string or `null` | empty               | File path                                                             | Logo path for builtin cover.                                                                                     |
-| `cover.builtin.title_color`          | string           | `#000000`           | color name or `#RRGGBB`                                               | Title color on builtin cover.                                                                                    |
+| `cover.builtin.title_color`          | string or `null` | empty               | color name or `#RRGGBB`                                               | Explicit title color on builtin cover. If unset, the embedded template falls back to `style.colors.primary`, then black. |
 | `cover.builtin.subtitle`             | string or `null` | empty               | Any string                                                            | Subtitle text on builtin cover.                                                                                  |
 | `cover.builtin.background_color`     | string           | `#FFFFFF`           | color name or `#RRGGBB`                                               | Background color on builtin cover.                                                                               |
 | `cover.builtin.align`                | string           | `center`            | `center`, `top`                                                       | Vertical alignment of builtin cover content.                                                                     |
 | `sources.explicit`                   | list of strings  | `[]`                | Existing files expected                                               | Ordered source list, processed first.                                                                            |
 | `sources.include`                    | list of strings  | `[]`                | Glob patterns                                                         | Additional sources matched by glob, sorted alphabetically, de-duplicated by canonical path.                      |
 | `assets.search_paths`                | list of strings  | `[]`                | Path list                                                             | Appended to Pandoc `--resource-path`.                                                                            |
-| `assets.logo_cover`                  | string or `null` | empty               | Path or identifier                                                    | Passed as metadata key `logo_cover` (used only if template consumes it).                                         |
-| `assets.logo_header`                 | string or `null` | empty               | Path or identifier                                                    | Passed as metadata key `logo_header` (used only if template consumes it).                                        |
-| `style.colors.primary`               | string or `null` | empty               | Any string (typically hex color)                                      | Passed as metadata key `color_primary` (template-dependent).                                                     |
-| `style.fonts.body`                   | string or `null` | empty               | Any string                                                            | Passed as metadata key `font_body` (template-dependent).                                                         |
-| `style.fonts.heading`                | string or `null` | empty               | Any string                                                            | Passed as metadata key `font_heading` (template-dependent).                                                      |
-| `style.links.color`                  | string           | `blue`              | named color or `#RRGGBB`                                              | Global color for internal links (including section refs and non-TOC internal links).                            |
-| `style.links.url_color`              | string           | `blue`              | named color or `#RRGGBB`                                              | Color for URL links.                                                                                             |
-| `style.links.citation_color`         | string           | `blue`              | named color or `#RRGGBB`                                              | Color for citation links.                                                                                        |
-| `style.links.toc_color`              | string or `null` | empty               | named color or `#RRGGBB`                                              | Color for ToC links only. If unset, ToC uses `style.links.color`.                                               |
+| `assets.logo_cover`                  | string or `null` | empty               | Path or identifier                                                    | In the embedded template, fallback logo for `cover.mode: builtin` when `cover.builtin.logo` is unset. Also passed as metadata key `logo_cover`. |
+| `assets.logo_header`                 | string or `null` | empty               | Path or identifier                                                    | In the embedded template, default header logo when `header_footer.enabled: true` and no explicit header cells are defined. Also passed as metadata key `logo_header`. |
+| `style.colors.primary`               | string or `null` | empty               | Any string (typically hex color)                                      | Theme fallback color in the embedded template: headings, document title, builtin cover title, and link colors unless a more specific value is set. |
+| `style.fonts.body`                   | string or `null` | empty               | Any string                                                            | Body font in the embedded template under `xelatex`/`lualatex`. Ignored by `pdflatex`.                          |
+| `style.fonts.heading`                | string or `null` | empty               | Any string                                                            | Heading and document-title font in the embedded template under `xelatex`/`lualatex`. Ignored by `pdflatex`.   |
+| `style.links.color`                  | string or `null` | empty               | named color or `#RRGGBB`                                              | Global color for internal links. If unset, the embedded template falls back to `style.colors.primary`, then blue. |
+| `style.links.url_color`              | string or `null` | empty               | named color or `#RRGGBB`                                              | Color for URL links. If unset, the embedded template falls back to `style.colors.primary`, then blue.          |
+| `style.links.citation_color`         | string or `null` | empty               | named color or `#RRGGBB`                                              | Color for citation links. If unset, the embedded template falls back to `style.colors.primary`, then blue.     |
+| `style.links.toc_color`              | string or `null` | empty               | named color or `#RRGGBB`                                              | Color for ToC links only. If unset, ToC uses `style.links.color` fallback behavior.                            |
 | `style.headings.h<1..6>.color`       | string or `null` | empty               | named color or `#RRGGBB`                                              | Per-level heading color (`h1`..`h6`) in the default template.                                                     |
 | `style.headings.h<1..6>.size_pt`     | number or `null` | empty               | `> 0`                                                                 | Per-level heading size in points.                                                                                |
 | `style.headings.h<1..6>.space_before_pt` | number or `null` | empty           | `>= 0`                                                                | Per-level vertical spacing before heading in points.                                                             |
@@ -164,6 +164,9 @@ The front matter schema is identical to the config file schema. The table below 
 | `style.plantuml.align`               | string           | `center`            | `left`, `center`, `right`                                             | Horizontal alignment for PlantUML-generated images (`plantuml-images/...`) in the default template.            |
 | `style.plantuml.space_before_pt`     | number           | `6`                 | `>= 0`                                                                | Extra vertical spacing inserted before PlantUML-generated images (points).                                       |
 | `style.plantuml.space_after_pt`      | number           | `0`                 | `>= 0`                                                                | Extra vertical spacing inserted after PlantUML-generated images (points).                                        |
+| `style.symbols.fallback_font`        | string or `null` | `Noto Sans Symbols2` | single-line font name                                                | Secondary font used by the embedded template for curated symbol characters under `xelatex`/`lualatex`.         |
+| `style.symbols.fallback_for[]`       | list<string>     | built-in list       | each entry must be exactly one Unicode character                      | Characters rendered directly with `style.symbols.fallback_font`, with LaTeX-safe fallback behavior under `pdflatex`. |
+| `style.symbols.replace.<char>`       | string           | built-in map        | key must be exactly one Unicode character; value must be a single-line LaTeX snippet | Explicit replacement override for Unicode symbols in the embedded template (example: `✅` -> `\mdtwosymbolglyph{☑}{\ensuremath{\checkmark}}`). |
 | `header_footer.enabled`              | boolean          | `false`             | `true` or `false`                                                     | Enables rich header/footer rendering in the default template.                                                    |
 | `header_footer.apply_on`             | string           | `toc_and_body`      | `body_only`, `toc_and_body`, `all_pages`                              | Controls where the header/footer style is activated.                                                             |
 | `header_footer.side_offset_left_pt`  | number           | `20`                | `>= 0`                                                                | Extends header/footer rendering into the left page margin (`fancyhfoffset`).                                     |
@@ -193,6 +196,14 @@ Heading visual style remains LaTeX default unless `style.headings.*` is set. Thi
 For backward compatibility, legacy keys (`style.headings.color`, `style.headings.h2_size_pt`, etc.) are still accepted and mapped to the new per-level format.
 With LaTeX `article`, `h5` and `h6` are both rendered as `subparagraph`; if both are configured, `h6` settings take precedence.
 
+### Theme colors, fonts, and logo fallbacks
+
+In the embedded template, `style.colors.primary` is a fallback theme color, not a hard override. More specific keys keep priority: `style.headings.h*.color`, `style.links.*`, and `cover.builtin.title_color` win when set.
+
+Likewise, `style.fonts.body` affects body text only, while `style.fonts.heading` affects headings and document title blocks. Custom fonts require `xelatex` or `lualatex` and must be installed on the host system.
+
+For logos, `assets.logo_cover` is used as the builtin cover logo only if `cover.builtin.logo` is unset, and `assets.logo_header` is injected only when header/footer rendering is enabled and no explicit header cells are configured.
+
 ### Default blockquote behavior
 
 With the embedded template, Markdown blockquotes (`>`) are rendered with a thin left bar, lighter text, and a subtle background. You can tune bar color, text color, background, bar width, spacing, and padding through `style.blockquote.*`.
@@ -200,6 +211,35 @@ With the embedded template, Markdown blockquotes (`>`) are rendered with a thin 
 ### PlantUML image layout
 
 With the embedded template, images produced by `pandoc-plantuml` (stored under `plantuml-images/`) can be styled through `style.plantuml.*`. By default they are centered and given a small spacing before the diagram.
+
+### Unicode symbol replacements
+
+With the embedded template, Unicode symbol handling is split into two layers. `style.symbols.fallback_for` routes curated checkbox/symbol characters through a secondary font (`style.symbols.fallback_font`) when the engine supports `fontspec`, while `style.symbols.replace` remains the explicit override mechanism for characters that need a custom LaTeX snippet. This avoids missing-glyph rectangles without requiring color-emoji support.
+
+For inline code and fenced code blocks, md2pdf also normalizes emoji-like aliases when the replacement uses `\mdtwosymbolglyph{...}{...}`. This keeps code samples readable in the monospace font even though verbatim LaTeX does not support the same Unicode fallback mechanism as body text.
+
+Example override:
+
+```yaml
+style:
+  symbols:
+    fallback_font: "Noto Sans Symbols2"
+    fallback_for:
+      - "☐"
+      - "☑"
+      - "☒"
+      - "⚠"
+    replace:
+      "✅": '\mdtwosymbolglyph{☑}{\ensuremath{\checkmark}}'
+      "❌": '\textbf{NO}'
+```
+
+Notes:
+
+- `replace` wins if the same character appears in both `fallback_for` and `replace`.
+- The default configuration strips the emoji variation selector (`U+FE0F`), so sequences like `⚠️` fall back to the base character `⚠`.
+- The default configuration also aliases common checkbox variants used in editors, for example `✅` and `🗹` to `☑`, and `❌` and `🗷` to `☒` inside code blocks.
+- The embedded template targets faithful monochrome symbols, not color emoji.
 
 ### Full-bleed cover image
 
@@ -270,7 +310,7 @@ cover:
   image_fit: cover
   builtin:
     logo: null
-    title_color: "#000000"
+    title_color: null
     subtitle: null
     background_color: "#FFFFFF"
     align: center
@@ -292,9 +332,9 @@ style:
     body: "Open Sans"
     heading: "Open Sans"
   links:
-    color: "blue"
-    url_color: "blue"
-    citation_color: "blue"
+    color: null
+    url_color: null
+    citation_color: null
     toc_color: null
   headings:
     h1:
@@ -338,6 +378,28 @@ style:
     align: center
     space_before_pt: 6
     space_after_pt: 0
+  symbols:
+    fallback_font: "Noto Sans Symbols2"
+    fallback_for:
+      - "☐"
+      - "☑"
+      - "☒"
+      - "⚠"
+      - "✓"
+      - "✔"
+      - "✗"
+      - "✖"
+    replace:
+      "💡": '\mdtwosymbolglyph{✦}{\textasteriskcentered}'
+      "✅": '\mdtwosymbolglyph{☑}{\ensuremath{\checkmark}}'
+      "❌": '\mdtwosymbolglyph{☒}{\ensuremath{\boxtimes}}'
+      "🗹": '\mdtwosymbolglyph{☑}{\ensuremath{\checkmark}}'
+      "🗷": '\mdtwosymbolglyph{☒}{\ensuremath{\boxtimes}}'
+      "🗸": '\mdtwosymbolglyph{✓}{\ensuremath{\checkmark}}'
+      "🗵": '\mdtwosymbolglyph{✗}{\ensuremath{\times}}'
+      "◻": '\mdtwosymbolglyph{☐}{\ensuremath{\square}}'
+      "⬜": '\mdtwosymbolglyph{☐}{\ensuremath{\square}}'
+      "️": ''
 header_footer:
   enabled: true
   apply_on: toc_and_body

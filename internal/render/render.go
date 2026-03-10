@@ -19,6 +19,9 @@ import (
 //go:embed templates/default.tex
 var defaultTemplate string
 
+//go:embed templates/table_code_wrap.lua
+var tableCodeWrapFilter string
+
 type Options struct {
 	InputPath        string
 	OutputPath       string
@@ -78,6 +81,20 @@ func GeneratePDF(ctx context.Context, opts Options) error {
 		}
 	}
 	args = append(args, "--template="+templatePath)
+
+	tableCodeWrapFilterPath, err := writeTableCodeWrapFilter(workDir)
+	if err != nil {
+		return fmt.Errorf("failed to prepare inline code table filter: %w", err)
+	}
+	args = append(args, "--lua-filter="+tableCodeWrapFilterPath)
+
+	codeSymbolNormalizeFilterPath, err := writeCodeSymbolNormalizeFilter(workDir, opts.Config.Style.Symbols)
+	if err != nil {
+		return fmt.Errorf("failed to prepare code symbol normalization filter: %w", err)
+	}
+	if codeSymbolNormalizeFilterPath != "" {
+		args = append(args, "--lua-filter="+codeSymbolNormalizeFilterPath)
+	}
 
 	resourcePaths := []string{filepath.Dir(opts.InputPath)}
 	for _, item := range opts.Config.Assets.SearchPaths {
@@ -142,6 +159,11 @@ func metadataArgs(cfg config.Config, baseDir string, tocEnabled bool, workDir st
 	}
 	if cfg.Style.Colors.Primary != "" {
 		pairs = append(pairs, [2]string{"color_primary", cfg.Style.Colors.Primary})
+		model, value := latexColor(cfg.Style.Colors.Primary)
+		pairs = append(pairs, [2]string{"color_primary_value", value})
+		if model != "" {
+			pairs = append(pairs, [2]string{"color_primary_model", model})
+		}
 	}
 	if cfg.Style.Fonts.Body != "" {
 		pairs = append(pairs, [2]string{"font_body", cfg.Style.Fonts.Body})
@@ -177,7 +199,7 @@ func metadataArgs(cfg config.Config, baseDir string, tocEnabled bool, workDir st
 			pairs = append(pairs, [2]string{"hyperref_toc_link_color_model", model})
 		}
 	}
-	headingStyleEnabled := false
+	headingStyleEnabled := strings.TrimSpace(cfg.Style.Fonts.Heading) != "" || strings.TrimSpace(cfg.Style.Colors.Primary) != ""
 	type headingStyleLevel struct {
 		key string
 		cfg config.HeadingLevelStyleConfig
@@ -269,8 +291,12 @@ func metadataArgs(cfg config.Config, baseDir string, tocEnabled bool, workDir st
 				pairs = append(pairs, [2]string{"cover_image_fit_cover", "true"})
 			}
 		}
-		if cfg.Cover.Builtin.Logo != "" {
-			pairs = append(pairs, [2]string{"cover_logo", fs.ResolveOptionalPath(baseDir, cfg.Cover.Builtin.Logo)})
+		coverLogo := strings.TrimSpace(cfg.Cover.Builtin.Logo)
+		if coverLogo == "" {
+			coverLogo = strings.TrimSpace(cfg.Assets.LogoCover)
+		}
+		if coverLogo != "" {
+			pairs = append(pairs, [2]string{"cover_logo", fs.ResolveOptionalPath(baseDir, coverLogo)})
 		}
 		if cfg.Cover.Builtin.TitleColor != "" {
 			model, value := latexColor(cfg.Cover.Builtin.TitleColor)
@@ -322,6 +348,11 @@ func metadataArgs(cfg config.Config, baseDir string, tocEnabled bool, workDir st
 		return nil, err
 	}
 	pairs = append(pairs, hfPairs...)
+	symbolPairs, err := buildUnicodeSymbolMetadata(cfg, workDir)
+	if err != nil {
+		return nil, err
+	}
+	pairs = append(pairs, symbolPairs...)
 
 	out := make([]string, 0, len(pairs)*2)
 	for _, pair := range pairs {
@@ -337,6 +368,18 @@ func writeDefaultTemplate(workDir string) (string, error) {
 	}
 	defer tmpFile.Close()
 	if _, err := tmpFile.WriteString(defaultTemplate); err != nil {
+		return "", err
+	}
+	return tmpFile.Name(), nil
+}
+
+func writeTableCodeWrapFilter(workDir string) (string, error) {
+	tmpFile, err := os.CreateTemp(workDir, "md2pdf-table-code-wrap-*.lua")
+	if err != nil {
+		return "", err
+	}
+	defer tmpFile.Close()
+	if _, err := tmpFile.WriteString(tableCodeWrapFilter); err != nil {
 		return "", err
 	}
 	return tmpFile.Name(), nil

@@ -51,6 +51,8 @@ func buildHeaderFooterMetadata(cfg config.Config, baseDir, workDir string, tocEn
 }
 
 func compileHeaderFooterPartial(cfg config.Config, baseDir string) (string, error) {
+	cfg = withDefaultHeaderLogoCell(cfg)
+
 	headerContent, err := compileHeaderFooterRegion(
 		cfg.HeaderFooter.Header,
 		cfg.HeaderFooter.GlobalStyle,
@@ -142,6 +144,36 @@ func compileHeaderFooterPartial(cfg config.Config, baseDir string) (string, erro
 	b.WriteString("}\n")
 	b.WriteString("\\newcommand{\\mdtwohfactivate}{\\pagestyle{mdtwohf}\\fancypagestyle{plain}{\\pagestyle{mdtwohf}}}\n")
 	return b.String(), nil
+}
+
+func withDefaultHeaderLogoCell(cfg config.Config) config.Config {
+	if !cfg.HeaderFooter.Enabled {
+		return cfg
+	}
+	if strings.TrimSpace(cfg.Assets.LogoHeader) == "" {
+		return cfg
+	}
+	if len(cfg.HeaderFooter.Header.Grid.Cells) > 0 {
+		return cfg
+	}
+
+	cfg.HeaderFooter.Header.Grid.Cells = []config.HeaderFooterCell{
+		{
+			Row:    1,
+			Col:    1,
+			AlignH: "left",
+			AlignV: "top",
+			Blocks: []config.HeaderFooterBlock{
+				{
+					Type:     "image",
+					Path:     cfg.Assets.LogoHeader,
+					HeightPt: 22,
+				},
+			},
+		},
+	}
+
+	return cfg
 }
 
 func compileHeaderFooterRegion(
