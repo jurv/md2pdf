@@ -59,6 +59,10 @@ $if(heading_style_enabled)$
 \usepackage{titlesec}
 $endif$
 \usepackage[font=small, labelfont={bf}]{caption}
+\DeclareCaptionFormat{mdtwonoop}{}
+$if(figure_caption_hidden)$
+\captionsetup[figure]{format=mdtwonoop,labelformat=empty,labelsep=none,skip=0pt}
+$endif$
 
 \geometry{margin=2.5cm}
 \colorlet{mdtwotitlecolor}{black}

@@ -208,6 +208,21 @@ func TestMetadataArgsIncludesPlantUMLStyle(t *testing.T) {
 	}
 }
 
+func TestMetadataArgsIncludesHiddenFigureCaptionFlag(t *testing.T) {
+	cfg := config.Default()
+	cfg.Style.Figures.CaptionEnabled = false
+
+	args, err := metadataArgs(cfg, "/tmp", false, t.TempDir())
+	if err != nil {
+		t.Fatalf("metadataArgs returned error: %v", err)
+	}
+
+	joined := strings.Join(args, " ")
+	if !strings.Contains(joined, "figure_caption_hidden=true") {
+		t.Fatalf("expected metadata to contain figure caption visibility flag, got %q", joined)
+	}
+}
+
 func TestMetadataArgsCoverImageImplicitBuiltinMode(t *testing.T) {
 	cfg := config.Default()
 	cfg.Cover.Mode = "none"
@@ -261,6 +276,18 @@ func TestDefaultTemplateDefinesCoverImageHelpers(t *testing.T) {
 		`\newcommand{\mdtwoaddcoverimagestretch}[1]{`,
 		`\AddToShipoutPictureBG*`,
 		`$if(cover_mode_first_page_background)$`,
+	} {
+		if !strings.Contains(defaultTemplate, needle) {
+			t.Fatalf("default template missing %q", needle)
+		}
+	}
+}
+
+func TestDefaultTemplateDefinesFigureCaptionHooks(t *testing.T) {
+	for _, needle := range []string{
+		`\DeclareCaptionFormat{mdtwonoop}{}`,
+		`$if(figure_caption_hidden)$`,
+		`\captionsetup[figure]{format=mdtwonoop,labelformat=empty,labelsep=none,skip=0pt}`,
 	} {
 		if !strings.Contains(defaultTemplate, needle) {
 			t.Fatalf("default template missing %q", needle)

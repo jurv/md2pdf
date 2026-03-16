@@ -90,6 +90,7 @@ type StyleConfig struct {
 	Colors     ColorsConfig          `yaml:"colors"`
 	Fonts      FontsConfig           `yaml:"fonts"`
 	Links      LinksStyleConfig      `yaml:"links"`
+	Figures    FigureStyleConfig     `yaml:"figures"`
 	Headings   HeadingStyleConfig    `yaml:"headings"`
 	BlockQuote BlockQuoteStyleConfig `yaml:"blockquote"`
 	PlantUML   PlantUMLStyleConfig   `yaml:"plantuml"`
@@ -110,6 +111,10 @@ type LinksStyleConfig struct {
 	URLColor      string `yaml:"url_color"`
 	CitationColor string `yaml:"citation_color"`
 	TOCColor      string `yaml:"toc_color"`
+}
+
+type FigureStyleConfig struct {
+	CaptionEnabled bool `yaml:"caption_enabled"`
 }
 
 type HeadingStyleConfig struct {
@@ -257,6 +262,9 @@ func Default() Config {
 				URLColor:      "",
 				CitationColor: "",
 				TOCColor:      "",
+			},
+			Figures: FigureStyleConfig{
+				CaptionEnabled: true,
 			},
 			BlockQuote: BlockQuoteStyleConfig{
 				BarColor:        "#E6E6E6",

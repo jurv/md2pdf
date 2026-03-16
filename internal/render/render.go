@@ -199,6 +199,9 @@ func metadataArgs(cfg config.Config, baseDir string, tocEnabled bool, workDir st
 			pairs = append(pairs, [2]string{"hyperref_toc_link_color_model", model})
 		}
 	}
+	if !cfg.Style.Figures.CaptionEnabled {
+		pairs = append(pairs, [2]string{"figure_caption_hidden", "true"})
+	}
 	headingStyleEnabled := strings.TrimSpace(cfg.Style.Fonts.Heading) != "" || strings.TrimSpace(cfg.Style.Colors.Primary) != ""
 	type headingStyleLevel struct {
 		key string

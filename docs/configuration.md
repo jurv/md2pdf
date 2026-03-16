@@ -151,6 +151,7 @@ The front matter schema is identical to the config file schema. The table below 
 | `style.links.url_color`              | string or `null` | empty               | named color or `#RRGGBB`                                              | Color for URL links. If unset, the embedded template falls back to `style.colors.primary`, then blue.          |
 | `style.links.citation_color`         | string or `null` | empty               | named color or `#RRGGBB`                                              | Color for citation links. If unset, the embedded template falls back to `style.colors.primary`, then blue.     |
 | `style.links.toc_color`              | string or `null` | empty               | named color or `#RRGGBB`                                              | Color for ToC links only. If unset, ToC uses `style.links.color` fallback behavior.                            |
+| `style.figures.caption_enabled`      | boolean          | `true`              | `true` or `false`                                                     | Controls whether Markdown figure captions (`Figure N: ...`) are displayed in the embedded template.             |
 | `style.headings.h<1..6>.color`       | string or `null` | empty               | named color or `#RRGGBB`                                              | Per-level heading color (`h1`..`h6`) in the default template.                                                     |
 | `style.headings.h<1..6>.size_pt`     | number or `null` | empty               | `> 0`                                                                 | Per-level heading size in points.                                                                                |
 | `style.headings.h<1..6>.space_before_pt` | number or `null` | empty           | `>= 0`                                                                | Per-level vertical spacing before heading in points.                                                             |
@@ -207,6 +208,10 @@ For logos, `assets.logo_cover` is used as the builtin cover logo only if `cover.
 ### Default blockquote behavior
 
 With the embedded template, Markdown blockquotes (`>`) are rendered with a thin left bar, lighter text, and a subtle background. You can tune bar color, text color, background, bar width, spacing, and padding through `style.blockquote.*`.
+
+### Figure captions
+
+By default, standalone Markdown images with a caption render as normal figures, including the visible label/text under the image. Set `style.figures.caption_enabled: false` to keep the image but hide the visible `Figure N: ...` caption in the embedded template.
 
 ### PlantUML image layout
 
@@ -336,6 +341,8 @@ style:
     url_color: null
     citation_color: null
     toc_color: null
+  figures:
+    caption_enabled: true
   headings:
     h1:
       color: null
