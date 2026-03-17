@@ -63,6 +63,9 @@ $endif$
 $if(figure_caption_hidden)$
 \captionsetup[figure]{format=mdtwonoop,labelformat=empty,labelsep=none,skip=0pt}
 $endif$
+$for(header-includes)$
+$header-includes$
+$endfor$
 
 \geometry{margin=2.5cm}
 \colorlet{mdtwotitlecolor}{black}

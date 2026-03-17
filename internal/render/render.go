@@ -22,6 +22,12 @@ var defaultTemplate string
 //go:embed templates/table_code_wrap.lua
 var tableCodeWrapFilter string
 
+//go:embed templates/columns.lua
+var columnsFilter string
+
+//go:embed templates/side_by_side.lua
+var sideBySideFilter string
+
 type Options struct {
 	InputPath        string
 	OutputPath       string
@@ -95,6 +101,18 @@ func GeneratePDF(ctx context.Context, opts Options) error {
 	if codeSymbolNormalizeFilterPath != "" {
 		args = append(args, "--lua-filter="+codeSymbolNormalizeFilterPath)
 	}
+
+	columnsFilterPath, err := writeColumnsFilter(workDir)
+	if err != nil {
+		return fmt.Errorf("failed to prepare columns filter: %w", err)
+	}
+	args = append(args, "--lua-filter="+columnsFilterPath)
+
+	sideBySideFilterPath, err := writeSideBySideFilter(workDir)
+	if err != nil {
+		return fmt.Errorf("failed to prepare side-by-side filter: %w", err)
+	}
+	args = append(args, "--lua-filter="+sideBySideFilterPath)
 
 	resourcePaths := []string{filepath.Dir(opts.InputPath)}
 	for _, item := range opts.Config.Assets.SearchPaths {
@@ -383,6 +401,30 @@ func writeTableCodeWrapFilter(workDir string) (string, error) {
 	}
 	defer tmpFile.Close()
 	if _, err := tmpFile.WriteString(tableCodeWrapFilter); err != nil {
+		return "", err
+	}
+	return tmpFile.Name(), nil
+}
+
+func writeColumnsFilter(workDir string) (string, error) {
+	tmpFile, err := os.CreateTemp(workDir, "md2pdf-columns-*.lua")
+	if err != nil {
+		return "", err
+	}
+	defer tmpFile.Close()
+	if _, err := tmpFile.WriteString(columnsFilter); err != nil {
+		return "", err
+	}
+	return tmpFile.Name(), nil
+}
+
+func writeSideBySideFilter(workDir string) (string, error) {
+	tmpFile, err := os.CreateTemp(workDir, "md2pdf-side-by-side-*.lua")
+	if err != nil {
+		return "", err
+	}
+	defer tmpFile.Close()
+	if _, err := tmpFile.WriteString(sideBySideFilter); err != nil {
 		return "", err
 	}
 	return tmpFile.Name(), nil

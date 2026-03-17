@@ -105,6 +105,83 @@ func TestWriteTableCodeWrapFilter(t *testing.T) {
 	}
 }
 
+func TestEmbeddedColumnsFilterContainsUpstreamMarkers(t *testing.T) {
+	for _, needle := range []string{
+		`Columns - multiple column support in Pandoc's markdown.`,
+		`@license MIT - see LICENSE file for details.`,
+		`local target_formats = {`,
+		`"latex",`,
+		`\\begin{multicols}{`,
+	} {
+		if !strings.Contains(columnsFilter, needle) {
+			t.Fatalf("embedded columns filter missing %q", needle)
+		}
+	}
+}
+
+func TestDefaultTemplateExposesPandocHeaderIncludes(t *testing.T) {
+	for _, needle := range []string{
+		`$for(header-includes)$`,
+		`$header-includes$`,
+		`$endfor$`,
+	} {
+		if !strings.Contains(defaultTemplate, needle) {
+			t.Fatalf("default template missing %q", needle)
+		}
+	}
+}
+
+func TestWriteColumnsFilter(t *testing.T) {
+	workDir := t.TempDir()
+	path, err := writeColumnsFilter(workDir)
+	if err != nil {
+		t.Fatalf("writeColumnsFilter returned error: %v", err)
+	}
+	if !strings.HasPrefix(path, workDir) {
+		t.Fatalf("expected filter path %q to be inside %q", path, workDir)
+	}
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read written filter: %v", err)
+	}
+	if string(content) != columnsFilter {
+		t.Fatalf("written filter content does not match embedded filter")
+	}
+}
+
+func TestEmbeddedSideBySideFilterContainsExpectedMarkers(t *testing.T) {
+	for _, needle := range []string{
+		`md2pdf side-by-side layout filter`,
+		`side-by-side`,
+		`\begin{minipage}[`,
+		`display: flex; align-items: `,
+		`ratio`,
+		`valign`,
+	} {
+		if !strings.Contains(sideBySideFilter, needle) {
+			t.Fatalf("embedded side-by-side filter missing %q", needle)
+		}
+	}
+}
+
+func TestWriteSideBySideFilter(t *testing.T) {
+	workDir := t.TempDir()
+	path, err := writeSideBySideFilter(workDir)
+	if err != nil {
+		t.Fatalf("writeSideBySideFilter returned error: %v", err)
+	}
+	if !strings.HasPrefix(path, workDir) {
+		t.Fatalf("expected filter path %q to be inside %q", path, workDir)
+	}
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read written filter: %v", err)
+	}
+	if string(content) != sideBySideFilter {
+		t.Fatalf("written filter content does not match embedded filter")
+	}
+}
+
 func TestCompileCodeSymbolNormalizeFilterIncludesConfiguredAliases(t *testing.T) {
 	filter, err := compileCodeSymbolNormalizeFilter(config.SymbolStyleConfig{
 		Replace: map[string]string{

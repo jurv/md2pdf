@@ -213,6 +213,78 @@ With the embedded template, Markdown blockquotes (`>`) are rendered with a thin 
 
 By default, standalone Markdown images with a caption render as normal figures, including the visible label/text under the image. Set `style.figures.caption_enabled: false` to keep the image but hide the visible `Figure N: ...` caption in the embedded template.
 
+### Column layouts
+
+`md2pdf` bundles the upstream [`dialoa/columns`](https://github.com/dialoa/columns) Pandoc Lua filter and enables it automatically during rendering. Use Pandoc fenced Div syntax, not raw HTML/CSS, for multi-column layout in PDF output.
+
+Upstream documentation:
+
+- repository: <https://github.com/dialoa/columns>
+- README and syntax reference: <https://github.com/dialoa/columns/blob/master/README.md>
+
+Minimal example:
+
+```markdown
+::: columns
+::: column
+![](assets/offre_a_propos_europe.png)
+:::
+::: column
+Depuis **23 ans**, nous accompagnons nos clients dans la conception et la réalisation de solutions logicielles à forte valeur ajoutée.
+:::
+:::
+```
+
+Notes:
+
+- raw HTML/CSS layout such as `<div style="display:flex">...</div>` is not interpreted as browser layout by the LaTeX/PDF backend
+- prefer images without standalone captions inside columns (`![](image.png)`) for predictable LaTeX output
+- advanced syntax such as explicit column counts, gaps, rules, `column-span`, and `columnbreak` comes from the upstream filter
+
+### Side-by-side paired layout
+
+For “left/right” paired content, `md2pdf` also bundles a dedicated `side-by-side` Lua filter. Unlike the `columns` filter, it renders exactly two panes using LaTeX `minipage`, so it supports explicit width control and vertical alignment between the two panes.
+
+Example with ratio:
+
+```markdown
+::: {.side-by-side ratio="38:62" gap=20pt valign=center}
+::: left
+![](assets/offre_a_propos_europe.png)
+:::
+::: right
+Depuis **23 ans**, nous accompagnons nos clients dans la conception et la réalisation de solutions logicielles à forte valeur ajoutée.
+:::
+:::
+```
+
+Example with percentages:
+
+```markdown
+::: {.side-by-side left=38% right=62% gap=20pt valign=center}
+::: left
+![](assets/offre_a_propos_europe.png)
+:::
+::: right
+Depuis **23 ans**, nous accompagnons nos clients dans la conception et la réalisation de solutions logicielles à forte valeur ajoutée.
+:::
+:::
+```
+
+Supported container attributes:
+
+- `ratio="38:62"`: width ratio between left and right panes
+- `left=38% right=62%`: explicit pane widths as percentages
+- `gap=20pt`: horizontal space between panes
+- `valign=center`: vertical alignment (`top`, `center`, `bottom`)
+- `align=center`: horizontal alignment inside both panes (`left`, `center`, `right`)
+
+Notes:
+
+- prefer `side-by-side` over `columns` for paired content such as image/text blocks
+- child panes can be marked with `left`/`right` classes; if omitted, the first two nested Divs are used
+- standalone image figures are flattened inside panes to avoid LaTeX float issues in `minipage`
+
 ### PlantUML image layout
 
 With the embedded template, images produced by `pandoc-plantuml` (stored under `plantuml-images/`) can be styled through `style.plantuml.*`. By default they are centered and given a small spacing before the diagram.
