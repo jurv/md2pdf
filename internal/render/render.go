@@ -296,6 +296,26 @@ func metadataArgs(cfg config.Config, baseDir string, tocEnabled bool, workDir st
 	case "none":
 		pairs = append(pairs, [2]string{"title_render_none", "true"})
 	}
+	backgroundImage := strings.TrimSpace(cfg.Background.Image)
+	if backgroundImage != "" {
+		pairs = append(pairs, [2]string{"background_image", fs.ResolveOptionalPath(baseDir, backgroundImage)})
+		switch effectiveBackgroundApplyOn(cfg) {
+		case "toc_and_body":
+			pairs = append(pairs, [2]string{"background_apply_on_toc_and_body", "true"})
+		case "body_only":
+			pairs = append(pairs, [2]string{"background_apply_on_body_only", "true"})
+		default:
+			pairs = append(pairs, [2]string{"background_apply_on_all_pages", "true"})
+		}
+		switch effectiveBackgroundImageFit(cfg) {
+		case "contain":
+			pairs = append(pairs, [2]string{"background_image_fit_contain", "true"})
+		case "stretch":
+			pairs = append(pairs, [2]string{"background_image_fit_stretch", "true"})
+		default:
+			pairs = append(pairs, [2]string{"background_image_fit_cover", "true"})
+		}
+	}
 	coverMode := strings.TrimSpace(cfg.Cover.Mode)
 	coverImage := strings.TrimSpace(cfg.Cover.Image)
 	switch coverMode {
@@ -521,6 +541,28 @@ func effectiveCoverImageFit(cfg config.Config) string {
 		return "stretch"
 	default:
 		return "cover"
+	}
+}
+
+func effectiveBackgroundImageFit(cfg config.Config) string {
+	switch strings.TrimSpace(cfg.Background.ImageFit) {
+	case "contain":
+		return "contain"
+	case "stretch":
+		return "stretch"
+	default:
+		return "cover"
+	}
+}
+
+func effectiveBackgroundApplyOn(cfg config.Config) string {
+	switch strings.TrimSpace(cfg.Background.ApplyOn) {
+	case "toc_and_body":
+		return "toc_and_body"
+	case "body_only":
+		return "body_only"
+	default:
+		return "all_pages"
 	}
 }
 

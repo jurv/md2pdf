@@ -346,6 +346,32 @@ func TestMetadataArgsCoverImageFitContain(t *testing.T) {
 	}
 }
 
+func TestMetadataArgsIncludesDocumentBackground(t *testing.T) {
+	cfg := config.Default()
+	cfg.Background.Image = "assets/background.png"
+	cfg.Background.ImageFit = "stretch"
+	cfg.Background.ApplyOn = "toc_and_body"
+
+	args, err := metadataArgs(cfg, "/tmp/project", true, t.TempDir())
+	if err != nil {
+		t.Fatalf("metadataArgs returned error: %v", err)
+	}
+
+	joined := strings.Join(args, " ")
+	for _, needle := range []string{
+		"background_image=" + filepath.Clean("/tmp/project/assets/background.png"),
+		"background_image_fit_stretch=true",
+		"background_apply_on_toc_and_body=true",
+	} {
+		if !strings.Contains(joined, needle) {
+			t.Fatalf("expected metadata to contain %q, got %q", needle, joined)
+		}
+	}
+	if strings.Contains(joined, "background_apply_on_all_pages=true") {
+		t.Fatalf("did not expect all_pages background metadata when toc_and_body is selected, got %q", joined)
+	}
+}
+
 func TestDefaultTemplateDefinesCoverImageHelpers(t *testing.T) {
 	for _, needle := range []string{
 		`\newcommand{\mdtwoaddcoverimagecover}[1]{`,
@@ -353,6 +379,23 @@ func TestDefaultTemplateDefinesCoverImageHelpers(t *testing.T) {
 		`\newcommand{\mdtwoaddcoverimagestretch}[1]{`,
 		`\AddToShipoutPictureBG*`,
 		`$if(cover_mode_first_page_background)$`,
+	} {
+		if !strings.Contains(defaultTemplate, needle) {
+			t.Fatalf("default template missing %q", needle)
+		}
+	}
+}
+
+func TestDefaultTemplateDefinesDocumentBackgroundHelpers(t *testing.T) {
+	for _, needle := range []string{
+		`\newcommand{\mdtwoplacebackgroundgraphic}[1]{`,
+		`\newcommand{\mdtwoaddbackgroundimagecover}[1]{`,
+		`\newcommand{\mdtwoaddbackgroundimagecontain}[1]{`,
+		`\newcommand{\mdtwoaddbackgroundimagestretch}[1]{`,
+		`\AddToShipoutPictureBG{`,
+		`$if(background_apply_on_all_pages)$`,
+		`$if(background_apply_on_toc_and_body)$`,
+		`$if(background_apply_on_body_only)$`,
 	} {
 		if !strings.Contains(defaultTemplate, needle) {
 			t.Fatalf("default template missing %q", needle)

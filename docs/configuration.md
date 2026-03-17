@@ -139,6 +139,9 @@ The front matter schema is identical to the config file schema. The table below 
 | `cover.builtin.subtitle`             | string or `null` | empty               | Any string                                                            | Subtitle text on builtin cover.                                                                                  |
 | `cover.builtin.background_color`     | string           | `#FFFFFF`           | color name or `#RRGGBB`                                               | Background color on builtin cover.                                                                               |
 | `cover.builtin.align`                | string           | `center`            | `center`, `top`                                                       | Vertical alignment of builtin cover content.                                                                     |
+| `background.image`                   | string or `null` | empty               | File path                                                             | Full-page background image for document pages in the embedded template.                                          |
+| `background.image_fit`               | string           | `cover`             | `cover`, `contain`, `stretch`                                         | Fit behavior for `background.image` (`cover` crops, `contain` preserves full image, `stretch` fills with distortion). |
+| `background.apply_on`                | string           | `all_pages`         | `all_pages`, `toc_and_body`, `body_only`                              | Controls when the document background becomes active.                                                            |
 | `sources.explicit`                   | list of strings  | `[]`                | Existing files expected                                               | Ordered source list, processed first.                                                                            |
 | `sources.include`                    | list of strings  | `[]`                | Glob patterns                                                         | Additional sources matched by glob, sorted alphabetically, de-duplicated by canonical path.                      |
 | `assets.search_paths`                | list of strings  | `[]`                | Path list                                                             | Appended to Pandoc `--resource-path`.                                                                            |
@@ -344,6 +347,30 @@ cover:
 
 In `cover.mode: builtin`, the cover already renders title/author; default inline title rendering is skipped on the following pages to avoid duplicate title blocks.
 
+### Document-wide background image
+
+To add the same background image across the document, use the dedicated `background.*` block:
+
+```yaml
+background:
+  image: "assets/background.png"
+  image_fit: cover
+  apply_on: all_pages
+```
+
+Behavior:
+
+- `background.*` is separate from `cover.*`
+- `all_pages` activates the background from the first rendered page
+- `toc_and_body` starts the background at the ToC, or at the body if no ToC is rendered
+- `body_only` keeps the cover/title/ToC pages unchanged and starts at body content only
+
+Priority rules:
+
+- `cover.image` remains specific to the cover / first page behavior and wins on that page when both are defined
+- if a dedicated cover page exists and no cover-specific image overrides it, the global background also applies there
+- with a custom `pdf.template`, the metadata is still exposed, but the template must implement the behavior itself
+
 ### Schema strictness
 
 At the moment, unknown keys are ignored. To avoid silent mistakes, prefer keeping front matter limited to the keys listed above.
@@ -391,6 +418,10 @@ cover:
     subtitle: null
     background_color: "#FFFFFF"
     align: center
+background:
+  image: null
+  image_fit: cover
+  apply_on: all_pages
 sources:
   explicit:
     - "000-intro.md"

@@ -16,6 +16,7 @@ type Config struct {
 	Heading      HeadingConfig      `yaml:"heading_numbering"`
 	TOC          TOCConfig          `yaml:"toc"`
 	Cover        CoverConfig        `yaml:"cover"`
+	Background   BackgroundConfig   `yaml:"background"`
 	Sources      SourcesConfig      `yaml:"sources"`
 	Assets       AssetsConfig       `yaml:"assets"`
 	Style        StyleConfig        `yaml:"style"`
@@ -73,6 +74,12 @@ type BuiltinCoverConfig struct {
 	Subtitle        string `yaml:"subtitle"`
 	BackgroundColor string `yaml:"background_color"`
 	Align           string `yaml:"align"`
+}
+
+type BackgroundConfig struct {
+	Image    string `yaml:"image"`
+	ImageFit string `yaml:"image_fit"`
+	ApplyOn  string `yaml:"apply_on"`
 }
 
 type SourcesConfig struct {
@@ -255,6 +262,10 @@ func Default() Config {
 				BackgroundColor: "#FFFFFF",
 				Align:           "center",
 			},
+		},
+		Background: BackgroundConfig{
+			ImageFit: "cover",
+			ApplyOn:  "all_pages",
 		},
 		Style: StyleConfig{
 			Links: LinksStyleConfig{
@@ -456,6 +467,18 @@ func (c *Config) Validate() error {
 	case "", "center", "top":
 	default:
 		return fmt.Errorf("invalid cover.builtin.align %q (allowed: center, top)", c.Cover.Builtin.Align)
+	}
+
+	switch c.Background.ImageFit {
+	case "", "cover", "contain", "stretch":
+	default:
+		return fmt.Errorf("invalid background.image_fit %q (allowed: cover, contain, stretch)", c.Background.ImageFit)
+	}
+
+	switch c.Background.ApplyOn {
+	case "", "all_pages", "toc_and_body", "body_only":
+	default:
+		return fmt.Errorf("invalid background.apply_on %q (allowed: all_pages, toc_and_body, body_only)", c.Background.ApplyOn)
 	}
 
 	if err := validateBlockQuoteStyle(c.Style.BlockQuote, "style.blockquote"); err != nil {

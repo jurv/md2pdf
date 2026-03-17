@@ -267,10 +267,17 @@ $if(unicode_symbols_partial)$
 \input{$unicode_symbols_partial$}
 $endif$
 
-% Cover background helpers (first page full-bleed image support).
+% Background image helpers.
 \newsavebox{\mdtwocoverimgbox}
 \newcommand{\mdtwoplacecovergraphic}[1]{%
   \AddToShipoutPictureBG*{%
+    \AtPageLowerLeft{%
+      \parbox[b][\paperheight][c]{\paperwidth}{\centering #1}%
+    }%
+  }%
+}
+\newcommand{\mdtwoplacebackgroundgraphic}[1]{%
+  \AddToShipoutPictureBG{%
     \AtPageLowerLeft{%
       \parbox[b][\paperheight][c]{\paperwidth}{\centering #1}%
     }%
@@ -293,6 +300,24 @@ $endif$
 }
 \newcommand{\mdtwoaddcoverimagestretch}[1]{%
   \mdtwoplacecovergraphic{\begingroup\setkeys{Gin}{width=\paperwidth,height=\paperheight,keepaspectratio=false}\includegraphics{#1}\endgroup}%
+}
+\makeatletter
+\newcommand{\mdtwoaddbackgroundimagecover}[1]{%
+  \sbox{\mdtwocoverimgbox}{\includegraphics{#1}}%
+  \edef\mdtwo@img@ratio{\fpeval{\strip@pt\wd\mdtwocoverimgbox / \strip@pt\dimexpr\ht\mdtwocoverimgbox+\dp\mdtwocoverimgbox\relax}}%
+  \edef\mdtwo@page@ratio{\fpeval{\strip@pt\paperwidth / \strip@pt\paperheight}}%
+  \ifdim\mdtwo@img@ratio pt>\mdtwo@page@ratio pt
+    \mdtwoplacebackgroundgraphic{\begingroup\setkeys{Gin}{width=10000pt,height=\paperheight,keepaspectratio=true}\includegraphics{#1}\endgroup}%
+  \else
+    \mdtwoplacebackgroundgraphic{\begingroup\setkeys{Gin}{width=\paperwidth,height=10000pt,keepaspectratio=true}\includegraphics{#1}\endgroup}%
+  \fi
+}
+\makeatother
+\newcommand{\mdtwoaddbackgroundimagecontain}[1]{%
+  \mdtwoplacebackgroundgraphic{\begingroup\setkeys{Gin}{width=\paperwidth,height=\paperheight,keepaspectratio=true}\includegraphics{#1}\endgroup}%
+}
+\newcommand{\mdtwoaddbackgroundimagestretch}[1]{%
+  \mdtwoplacebackgroundgraphic{\begingroup\setkeys{Gin}{width=\paperwidth,height=\paperheight,keepaspectratio=false}\includegraphics{#1}\endgroup}%
 }
 
 % Quotes: subtle visual distinction with configurable bar/text style.
@@ -616,6 +641,17 @@ $if(hf_activate_at_start)$
 \mdtwohfactivate
 $endif$
 $endif$
+$if(background_apply_on_all_pages)$
+$if(background_image_fit_contain)$
+\mdtwoaddbackgroundimagecontain{$background_image$}
+$endif$
+$if(background_image_fit_stretch)$
+\mdtwoaddbackgroundimagestretch{$background_image$}
+$endif$
+$if(background_image_fit_cover)$
+\mdtwoaddbackgroundimagecover{$background_image$}
+$endif$
+$endif$
 $if(cover_mode_first_page_background)$
 $if(cover_image_fit_contain)$
 \mdtwoaddcoverimagecontain{$cover_image$}
@@ -682,9 +718,6 @@ $endif$
 $if(date)$
 {\large $date$\par}
 $endif$
-$if(cover_image)$
-\ClearShipoutPictureBG
-$endif$
 $if(hf_activate_at_start)$
 \thispagestyle{mdtwohf}
 $endif$
@@ -716,6 +749,17 @@ $endif$
 $endif$
 $endif$
 $if(toc)$
+$if(background_apply_on_toc_and_body)$
+$if(background_image_fit_contain)$
+\mdtwoaddbackgroundimagecontain{$background_image$}
+$endif$
+$if(background_image_fit_stretch)$
+\mdtwoaddbackgroundimagestretch{$background_image$}
+$endif$
+$if(background_image_fit_cover)$
+\mdtwoaddbackgroundimagecover{$background_image$}
+$endif$
+$endif$
 $if(hf_activate_before_toc)$
 \mdtwohfactivate
 $endif$
@@ -732,8 +776,33 @@ $if(hf_activate_after_toc)$
 \mdtwohfactivate
 $endif$
 $endif$
+$if(background_apply_on_toc_and_body)$
+$if(toc)$
+$else$
+$if(background_image_fit_contain)$
+\mdtwoaddbackgroundimagecontain{$background_image$}
+$endif$
+$if(background_image_fit_stretch)$
+\mdtwoaddbackgroundimagestretch{$background_image$}
+$endif$
+$if(background_image_fit_cover)$
+\mdtwoaddbackgroundimagecover{$background_image$}
+$endif$
+$endif$
+$endif$
 $if(hf_activate_before_body_no_toc)$
 \mdtwohfactivate
+$endif$
+$if(background_apply_on_body_only)$
+$if(background_image_fit_contain)$
+\mdtwoaddbackgroundimagecontain{$background_image$}
+$endif$
+$if(background_image_fit_stretch)$
+\mdtwoaddbackgroundimagestretch{$background_image$}
+$endif$
+$if(background_image_fit_cover)$
+\mdtwoaddbackgroundimagecover{$background_image$}
+$endif$
 $endif$
 
 $body$

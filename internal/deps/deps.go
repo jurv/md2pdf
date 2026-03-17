@@ -42,7 +42,7 @@ func CollectDoctorStatuses(defaultEngine string) []Status {
 		{name: "java", required: false, versionArg: []string{"-version"}, probe: true, note: "Runtime often required by PlantUML."},
 		{name: "dot", required: false, versionArg: []string{"-V"}, probe: true, note: "Graphviz binary used by PlantUML."},
 		{name: "pdftk", required: false, versionArg: []string{"--version"}, probe: true, note: "Used by the merge command."},
-		{name: "gs", required: false, versionArg: []string{"--version"}, probe: true, note: "Used by the compress command."},
+		{name: "gs", required: false, versionArg: []string{"--version"}, probe: true, note: "Used by the compress command and build --compress."},
 	}
 
 	out := make([]Status, 0, len(checks))

@@ -11,19 +11,28 @@ import (
 	"github.com/julien/md2pdf/internal/deps"
 	"github.com/julien/md2pdf/internal/frontmatter"
 	"github.com/julien/md2pdf/internal/fs"
+	"github.com/julien/md2pdf/internal/pdf"
 	"github.com/julien/md2pdf/internal/render"
 	"github.com/spf13/cobra"
 )
 
+var (
+	generatePDFFunc             = render.GeneratePDF
+	compressPDFFunc             = pdf.Compress
+	ensureBuildDependenciesFunc = deps.EnsureBuildDependencies
+)
+
 type buildFlags struct {
-	Output        string
-	GlobalConfig  string
-	ProjectConfig string
-	Engine        string
-	Template      string
-	TOCMode       string
-	TOCTitle      string
-	TOCDepth      int
+	Output          string
+	GlobalConfig    string
+	ProjectConfig   string
+	Engine          string
+	Template        string
+	TOCMode         string
+	TOCTitle        string
+	TOCDepth        int
+	Compress        bool
+	CompressQuality string
 }
 
 func newBuildCmd(global *GlobalOptions) *cobra.Command {
@@ -45,6 +54,8 @@ func newBuildCmd(global *GlobalOptions) *cobra.Command {
 	cmd.Flags().StringVar(&flags.TOCMode, "toc", "", "Table of contents mode (auto, on, off)")
 	cmd.Flags().StringVar(&flags.TOCTitle, "toc-title", "", "Table of contents title")
 	cmd.Flags().IntVar(&flags.TOCDepth, "toc-depth", 0, "Table of contents depth")
+	cmd.Flags().BoolVar(&flags.Compress, "compress", false, "Compress the generated PDF with Ghostscript after rendering")
+	cmd.Flags().StringVar(&flags.CompressQuality, "compress-quality", "printer", "Compression profile for --compress: screen, ebook, printer, prepress")
 
 	return cmd
 }
@@ -151,14 +162,28 @@ func runBuild(ctx context.Context, global *GlobalOptions, cmd *cobra.Command, fl
 	enableTOC := render.ShouldEnableTOC(cfg.TOC.Mode, merged, cfg.TOC.FromLevel, cfg.TOC.ToLevel)
 	enablePlantUML := shouldEnablePlantUML(cfg.Features.PlantUML, merged)
 
-	if err := deps.EnsureBuildDependencies(cfg.PDF.Engine, enablePlantUML); err != nil {
+	if err := ensureBuildDependenciesFunc(cfg.PDF.Engine, enablePlantUML); err != nil {
 		return dependencyError("dependency check failed", err)
 	}
 
 	outputPath := resolveOutputPath(inputPath, flags.Output, cfg.PDF.Output)
-	err = render.GeneratePDF(ctx, render.Options{
+	renderOutputPath := outputPath
+	if flags.Compress {
+		tempFile, tempErr := os.CreateTemp("", "md2pdf-build-*.pdf")
+		if tempErr != nil {
+			return runtimeError("failed to prepare temporary PDF for compression", tempErr)
+		}
+		renderOutputPath = tempFile.Name()
+		if err := tempFile.Close(); err != nil {
+			_ = os.Remove(renderOutputPath)
+			return runtimeError("failed to prepare temporary PDF for compression", err)
+		}
+		defer os.Remove(renderOutputPath)
+	}
+
+	err = generatePDFFunc(ctx, render.Options{
 		InputPath:        inputPath,
-		OutputPath:       outputPath,
+		OutputPath:       renderOutputPath,
 		Markdown:         merged,
 		Config:           cfg,
 		EnableTOC:        enableTOC,
@@ -167,6 +192,15 @@ func runBuild(ctx context.Context, global *GlobalOptions, cmd *cobra.Command, fl
 	})
 	if err != nil {
 		return runtimeError("build failed", err)
+	}
+
+	if flags.Compress {
+		if err := compressPDFFunc(renderOutputPath, outputPath, flags.CompressQuality); err != nil {
+			if strings.Contains(err.Error(), "ghostscript") {
+				return dependencyError("ghostscript is required", err)
+			}
+			return runtimeError("compression failed", err)
+		}
 	}
 
 	fmt.Printf("Generated PDF: %s\n", outputPath)

@@ -31,7 +31,7 @@ Install one of them and run the command again.
 
 ## Compress command fails
 
-The compression command requires Ghostscript (`gs`). Install it and retry.
+PDF compression requires Ghostscript (`gs`), whether you use `md2pdf compress` or `md2pdf build --compress`. Install it and retry.
 
 ## Unexpected output path
 
