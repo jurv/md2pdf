@@ -49,7 +49,7 @@ func TestLatexColorNamed(t *testing.T) {
 }
 
 func TestPandocInputFormatSupportsInlineListBlockquotes(t *testing.T) {
-	if pandocInputFormat != "markdown-blank_before_blockquote" {
+	if pandocInputFormat != "markdown-blank_before_blockquote-blank_before_header" {
 		t.Fatalf("unexpected input format %q", pandocInputFormat)
 	}
 }

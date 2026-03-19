@@ -228,3 +228,121 @@ func TestCompileHeaderFooterPartialDoesNotInjectDefaultHeaderLogoWhenHeaderIsExp
 		t.Fatalf("did not expect default header logo injection when header is explicit, got:\n%s", out)
 	}
 }
+
+func TestCompileHeaderFooterPartialProvidesOpacityWrapperFallback(t *testing.T) {
+	cfg := config.Default()
+	cfg.HeaderFooter.Enabled = true
+	cfg.HeaderFooter.Header.Grid.Cells = []config.HeaderFooterCell{
+		{
+			Row:    1,
+			Col:    1,
+			AlignH: "left",
+			AlignV: "top",
+			Blocks: []config.HeaderFooterBlock{
+				{Type: "text", Value: "Header"},
+			},
+		},
+	}
+
+	out, err := compileHeaderFooterPartial(cfg, "/tmp")
+	if err != nil {
+		t.Fatalf("unexpected compile error: %v", err)
+	}
+	for _, needle := range []string{
+		`\@ifundefined{tikz}{\DeclareRobustCommand{\mdtwoapplyimageopacity}[2]{#2}}`,
+		`\DeclareRobustCommand{\mdtwoapplyimageopacity}[2]{\tikz[baseline]{\node[anchor=base,inner sep=0pt,outer sep=0pt,opacity=#1]{#2};}}`,
+	} {
+		if !strings.Contains(out, needle) {
+			t.Fatalf("expected opacity wrapper helper in header/footer partial, missing %q in:\n%s", needle, out)
+		}
+	}
+}
+
+func TestApplyTextStyleUsesTransparencyForHexColor(t *testing.T) {
+	out := applyTextStyle("Confidential", config.TextStyleConfig{
+		Color:   "#112233",
+		Opacity: 0.35,
+	})
+
+	for _, needle := range []string{`\definecolor{mdtwoopacitybase}{HTML}{112233}`, `\color{mdtwoopacitybase!35!white}`, `Confidential`} {
+		if !strings.Contains(out, needle) {
+			t.Fatalf("expected styled text to contain %q, got %q", needle, out)
+		}
+	}
+}
+
+func TestApplyTextStyleOmitsTransparencyAtOpacityOne(t *testing.T) {
+	out := applyTextStyle("Confidential", config.TextStyleConfig{
+		Color:   "#112233",
+		Opacity: 1,
+	})
+
+	for _, needle := range []string{`\mdtwoapplyimageopacity{`, `\definecolor{mdtwoopacitybase}{HTML}{112233}`} {
+		if strings.Contains(out, needle) {
+			t.Fatalf("did not expect %q at opacity 1, got %q", needle, out)
+		}
+	}
+}
+
+func TestCompileHeaderFooterPartialAppliesGlobalOpacityToPageNumbers(t *testing.T) {
+	cfg := config.Default()
+	cfg.HeaderFooter.Enabled = true
+	cfg.HeaderFooter.GlobalStyle.Opacity = 0.4
+	cfg.HeaderFooter.Footer.Grid.Cells = []config.HeaderFooterCell{
+		{
+			Row:    1,
+			Col:    2,
+			AlignH: "right",
+			AlignV: "bottom",
+			Blocks: []config.HeaderFooterBlock{
+				{Type: "page_number", Format: "{page}"},
+			},
+		},
+	}
+
+	out, err := compileHeaderFooterPartial(cfg, "/tmp")
+	if err != nil {
+		t.Fatalf("unexpected compile error: %v", err)
+	}
+	for _, needle := range []string{`!40!white`, `\thepage`} {
+		if !strings.Contains(out, needle) {
+			t.Fatalf("expected output to contain %q, got:\n%s", needle, out)
+		}
+	}
+}
+
+func TestCompileHeaderFooterPartialAppliesGlobalOpacityToImages(t *testing.T) {
+	cfg := config.Default()
+	cfg.HeaderFooter.Enabled = true
+	cfg.HeaderFooter.GlobalStyle.Opacity = 0.25
+	cfg.HeaderFooter.Header.Grid.Cells = []config.HeaderFooterCell{
+		{
+			Row:    1,
+			Col:    1,
+			AlignH: "left",
+			AlignV: "top",
+			Blocks: []config.HeaderFooterBlock{
+				{Type: "image", Path: "assets/logo-header.png", HeightPt: 22},
+			},
+		},
+	}
+
+	out, err := compileHeaderFooterPartial(cfg, "/tmp/project")
+	if err != nil {
+		t.Fatalf("unexpected compile error: %v", err)
+	}
+	for _, needle := range []string{
+		`\mdtwoapplyimageopacity{0.25}{`,
+		`\includegraphics[height=22pt,keepaspectratio]{\detokenize{/tmp/project/assets/logo-header.png}}`,
+	} {
+		if !strings.Contains(out, needle) {
+			t.Fatalf("expected output to contain %q, got:\n%s", needle, out)
+		}
+	}
+}
+
+func TestDefaultTemplateLoadsTikzPackage(t *testing.T) {
+	if !strings.Contains(defaultTemplate, `\usepackage{tikz}`) {
+		t.Fatalf("expected embedded template to load tikz package")
+	}
+}

@@ -38,7 +38,11 @@ type Options struct {
 	VerboseExecution bool
 }
 
-const pandocInputFormat = "markdown-blank_before_blockquote"
+// Accept common markdown written without an empty line before a blockquote or
+// an ATX heading. A lot of existing project documents rely on that looser
+// syntax, and keeping Pandoc's stricter blank-before-header rule causes later
+// headings to be swallowed into the previous paragraph.
+const pandocInputFormat = "markdown-blank_before_blockquote-blank_before_header"
 
 func GeneratePDF(ctx context.Context, opts Options) error {
 	if len(opts.Markdown) == 0 {

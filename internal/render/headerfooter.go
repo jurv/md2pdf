@@ -77,6 +77,9 @@ func compileHeaderFooterPartial(cfg config.Config, baseDir string) (string, erro
 	}
 
 	var b strings.Builder
+	b.WriteString("\\makeatletter\n")
+	b.WriteString("\\@ifundefined{tikz}{\\DeclareRobustCommand{\\mdtwoapplyimageopacity}[2]{#2}}{\\DeclareRobustCommand{\\mdtwoapplyimageopacity}[2]{\\tikz[baseline]{\\node[anchor=base,inner sep=0pt,outer sep=0pt,opacity=#1]{#2};}}}\n")
+	b.WriteString("\\makeatother\n")
 	headHeight := cfg.HeaderFooter.Header.HeightPt
 	headSep := cfg.HeaderFooter.Header.SepPt
 	if cfg.HeaderFooter.Header.RaisePt > 0 {
@@ -336,13 +339,13 @@ func compileHeaderFooterBlock(
 		content := renderTextWithTokens(format, docTitle)
 		return applyTextStyle(content, mergeTextStyle(globalStyle, block.Style)), nil
 	case "image":
-		return renderImageBlock(block, baseDir), nil
+		return renderImageBlock(block, mergeTextStyle(globalStyle, block.Style), baseDir), nil
 	default:
 		return "", fmt.Errorf("unsupported header/footer block type %q", block.Type)
 	}
 }
 
-func renderImageBlock(block config.HeaderFooterBlock, baseDir string) string {
+func renderImageBlock(block config.HeaderFooterBlock, style config.TextStyleConfig, baseDir string) string {
 	path := fs.ResolveOptionalPath(baseDir, block.Path)
 	opts := make([]string, 0, 3)
 	if block.WidthPt > 0 {
@@ -354,6 +357,7 @@ func renderImageBlock(block config.HeaderFooterBlock, baseDir string) string {
 	opts = append(opts, "keepaspectratio")
 
 	var b strings.Builder
+	b.WriteString("{")
 	b.WriteString("\\includegraphics")
 	if len(opts) > 0 {
 		b.WriteString("[")
@@ -363,7 +367,8 @@ func renderImageBlock(block config.HeaderFooterBlock, baseDir string) string {
 	b.WriteString("{\\detokenize{")
 	b.WriteString(path)
 	b.WriteString("}}")
-	return b.String()
+	b.WriteString("}")
+	return applyImageOpacityWrapper(b.String(), style.Opacity)
 }
 
 func renderTextWithTokens(raw, docTitle string) string {
@@ -427,24 +432,47 @@ func applyTextStyle(content string, style config.TextStyleConfig) string {
 
 func latexColorCommand(color string, opacity float64) string {
 	trimmed := strings.TrimSpace(color)
-	if trimmed == "" {
+	effectiveOpacity := opacity
+	if effectiveOpacity <= 0 || effectiveOpacity > 1 {
+		effectiveOpacity = 1
+	}
+	if trimmed == "" && effectiveOpacity >= 1 {
 		return ""
 	}
-	model, value := latexColor(trimmed)
-	if model == "HTML" {
-		return `\color[HTML]{` + value + "}"
-	}
-	if opacity > 0 && opacity < 1 {
-		percent := int(opacity * 100)
+
+	if effectiveOpacity < 1 {
+		percent := int(effectiveOpacity*100 + 0.5)
 		if percent < 0 {
 			percent = 0
 		}
 		if percent > 100 {
 			percent = 100
 		}
-		return `\color{` + value + "!" + strconv.Itoa(percent) + "}"
+		if trimmed == "" {
+			return `\color{black!` + strconv.Itoa(percent) + `!white}`
+		}
+		model, value := latexColor(trimmed)
+		if model == "HTML" {
+			return `\definecolor{mdtwoopacitybase}{HTML}{` + value + `}\color{mdtwoopacitybase!` + strconv.Itoa(percent) + `!white}`
+		}
+		return `\color{` + value + "!" + strconv.Itoa(percent) + `!white}`
+	}
+
+	model, value := latexColor(trimmed)
+	if model == "HTML" {
+		return `\color[HTML]{` + value + "}"
 	}
 	return `\color{` + value + "}"
+}
+
+func applyImageOpacityWrapper(content string, opacity float64) string {
+	if strings.TrimSpace(content) == "" {
+		return ""
+	}
+	if opacity >= 0 && opacity < 1 {
+		return `\mdtwoapplyimageopacity{` + trimTrailingZero(opacity) + `}{` + content + "}"
+	}
+	return content
 }
 
 func mergeTextStyle(base, override config.TextStyleConfig) config.TextStyleConfig {

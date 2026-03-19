@@ -182,6 +182,7 @@ The front matter schema is identical to the config file schema. The table below 
 | `header_footer.global_style.color`   | string           | `#E0E0E0`           | named color or `#RRGGBB`                                              | Default text color for header/footer blocks.                                                                     |
 | `header_footer.global_style.size_pt` | number           | `7`                 | `>= 0`                                                                | Default font size in points.                                                                                     |
 | `header_footer.global_style.line_height_pt` | number     | `8`                 | `>= 0`                                                                | Default line height in points.                                                                                   |
+| `header_footer.global_style.opacity` | number           | `1`                 | `0..1`                                                                | Global opacity for header/footer blocks in the embedded template, including text, page numbers, and images.     |
 | `header_footer.header.height_pt`     | number           | `36`                | `>= 0`                                                                | Header box height (`\\headheight`).                                                                               |
 | `header_footer.header.sep_pt`        | number           | `22`                | `>= 0`                                                                | Header/content separation (`\\headsep`).                                                                          |
 | `header_footer.header.raise_pt`      | number           | `4`                 | any number                                                            | Vertical nudge for header content in points (positive = higher).                                                 |
@@ -207,6 +208,12 @@ In the embedded template, `style.colors.primary` is a fallback theme color, not 
 Likewise, `style.fonts.body` affects body text only, while `style.fonts.heading` affects headings and document title blocks. Custom fonts require `xelatex` or `lualatex` and must be installed on the host system.
 
 For logos, `assets.logo_cover` is used as the builtin cover logo only if `cover.builtin.logo` is unset, and `assets.logo_header` is injected only when header/footer rendering is enabled and no explicit header cells are configured.
+
+### Header/footer opacity
+
+With the embedded template, `header_footer.global_style.opacity` applies a global transparency factor to header/footer content, including text, page numbers, and images. Use `1.0` for fully opaque content, lower values such as `0.3` or `0.5` for more discreet output.
+
+If you use a custom `pdf.template`, make sure it loads the LaTeX `tikz` package if you want header/footer opacity to remain effective.
 
 ### Default blockquote behavior
 
