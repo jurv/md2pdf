@@ -155,6 +155,9 @@ The front matter schema is identical to the config file schema. The table below 
 | `style.links.citation_color`         | string or `null` | empty               | named color or `#RRGGBB`                                              | Color for citation links. If unset, the embedded template falls back to `style.colors.primary`, then blue.     |
 | `style.links.toc_color`              | string or `null` | empty               | named color or `#RRGGBB`                                              | Color for ToC links only. If unset, ToC uses `style.links.color` fallback behavior.                            |
 | `style.figures.caption_enabled`      | boolean          | `true`              | `true` or `false`                                                     | Controls whether Markdown figure captions (`Figure N: ...`) are displayed in the embedded template.             |
+| `style.tables.row_spacing_factor`    | number           | `1.2`               | `> 0`                                                                 | Multiplier applied to table row height in the embedded template.                                                |
+| `style.tables.zebra_enabled`         | boolean          | `true`              | `true` or `false`                                                     | Enables alternating background color on Markdown table body rows in the embedded template.                      |
+| `style.tables.zebra_color`           | string           | `#F5F5F5`           | named color or `#RRGGBB`                                              | Background color used for alternating Markdown table body rows.                                                 |
 | `style.headings.h<1..6>.color`       | string or `null` | empty               | named color or `#RRGGBB`                                              | Per-level heading color (`h1`..`h6`) in the default template.                                                     |
 | `style.headings.h<1..6>.size_pt`     | number or `null` | empty               | `> 0`                                                                 | Per-level heading size in points.                                                                                |
 | `style.headings.h<1..6>.space_before_pt` | number or `null` | empty           | `>= 0`                                                                | Per-level vertical spacing before heading in points.                                                             |
@@ -222,6 +225,26 @@ With the embedded template, Markdown blockquotes (`>`) are rendered with a thin 
 ### Figure captions
 
 By default, standalone Markdown images with a caption render as normal figures, including the visible label/text under the image. Set `style.figures.caption_enabled: false` to keep the image but hide the visible `Figure N: ...` caption in the embedded template.
+
+### Table readability
+
+With the embedded template, Markdown tables now use slightly taller rows by default and zebra striping on body rows to improve readability. The header row remains plain.
+
+Available settings:
+
+- `style.tables.row_spacing_factor`: multiplies the default row height (`1.2` by default)
+- `style.tables.zebra_enabled`: toggles alternating body-row backgrounds (`true` by default)
+- `style.tables.zebra_color`: sets the stripe color (`#F5F5F5` by default)
+
+Example:
+
+```yaml
+style:
+  tables:
+    row_spacing_factor: 1.25
+    zebra_enabled: true
+    zebra_color: "#F3F3F3"
+```
 
 ### Column layouts
 
@@ -453,6 +476,10 @@ style:
     toc_color: null
   figures:
     caption_enabled: true
+  tables:
+    row_spacing_factor: 1.2
+    zebra_enabled: true
+    zebra_color: "#F5F5F5"
   headings:
     h1:
       color: null

@@ -98,6 +98,7 @@ type StyleConfig struct {
 	Fonts      FontsConfig           `yaml:"fonts"`
 	Links      LinksStyleConfig      `yaml:"links"`
 	Figures    FigureStyleConfig     `yaml:"figures"`
+	Tables     TableStyleConfig      `yaml:"tables"`
 	Headings   HeadingStyleConfig    `yaml:"headings"`
 	BlockQuote BlockQuoteStyleConfig `yaml:"blockquote"`
 	PlantUML   PlantUMLStyleConfig   `yaml:"plantuml"`
@@ -122,6 +123,12 @@ type LinksStyleConfig struct {
 
 type FigureStyleConfig struct {
 	CaptionEnabled bool `yaml:"caption_enabled"`
+}
+
+type TableStyleConfig struct {
+	RowSpacingFactor float64 `yaml:"row_spacing_factor"`
+	ZebraEnabled     bool    `yaml:"zebra_enabled"`
+	ZebraColor       string  `yaml:"zebra_color"`
 }
 
 type HeadingStyleConfig struct {
@@ -276,6 +283,11 @@ func Default() Config {
 			},
 			Figures: FigureStyleConfig{
 				CaptionEnabled: true,
+			},
+			Tables: TableStyleConfig{
+				RowSpacingFactor: 1.2,
+				ZebraEnabled:     true,
+				ZebraColor:       "#F5F5F5",
 			},
 			BlockQuote: BlockQuoteStyleConfig{
 				BarColor:        "#E6E6E6",
@@ -496,6 +508,9 @@ func (c *Config) Validate() error {
 	if err := validateHeadingStyle(c.Style.Headings, "style.headings"); err != nil {
 		return err
 	}
+	if err := validateTableStyle(c.Style.Tables, "style.tables"); err != nil {
+		return err
+	}
 
 	switch c.HeaderFooter.ApplyOn {
 	case "body_only", "toc_and_body", "all_pages":
@@ -672,6 +687,16 @@ func validateLinksStyle(style LinksStyleConfig, prefix string) error {
 		return err
 	}
 	if err := validateColorValue(style.TOCColor, prefix+".toc_color"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateTableStyle(style TableStyleConfig, prefix string) error {
+	if style.RowSpacingFactor <= 0 {
+		return fmt.Errorf("%s.row_spacing_factor must be > 0", prefix)
+	}
+	if err := validateColorValue(style.ZebraColor, prefix+".zebra_color"); err != nil {
 		return err
 	}
 	return nil

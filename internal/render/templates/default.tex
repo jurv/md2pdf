@@ -38,7 +38,7 @@
 \usepackage{amssymb}
 \usepackage{xurl}
 \usepackage{hyperref}
-\usepackage{xcolor}
+\usepackage[table]{xcolor}
 \usepackage{graphicx}
 \usepackage{tikz}
 \usepackage{float}
@@ -46,6 +46,7 @@
 \usepackage{booktabs}
 \usepackage{array}
 \usepackage{calc}
+\usepackage{etoolbox}
 \usepackage{microtype}
 \usepackage{enumitem}
 \usepackage{framed}
@@ -138,6 +139,37 @@ $endif$
 
 % Pandoc table width helper.
 \providecommand{\real}[1]{#1}
+
+$if(table_zebra_color_value)$
+$if(table_zebra_color_model)$
+\definecolor{mdtwotablezebracolor}{$table_zebra_color_model$}{$table_zebra_color_value$}
+$else$
+\colorlet{mdtwotablezebracolor}{$table_zebra_color_value$}
+$endif$
+$else$
+\definecolor{mdtwotablezebracolor}{HTML}{F5F5F5}
+$endif$
+
+$if(table_row_spacing_factor)$
+\newcommand{\mdtwotablerowspacingfactor}{$table_row_spacing_factor$}
+$else$
+\newcommand{\mdtwotablerowspacingfactor}{1.2}
+$endif$
+
+\newcommand{\mdtworesettablestyle}{%
+  \renewcommand{\arraystretch}{1}%
+  \rowcolors{2}{}{}%
+}
+\newcommand{\mdtwoapplytablestyle}{%
+  \renewcommand{\arraystretch}{\mdtwotablerowspacingfactor}%
+$if(table_zebra_enabled)$
+  \rowcolors{2}{}{mdtwotablezebracolor}%
+$else$
+  \rowcolors{2}{}{}%
+$endif$
+}
+\AtBeginEnvironment{longtable}{\mdtwoapplytablestyle}
+\AtEndEnvironment{longtable}{\mdtworesettablestyle}
 
 % Shaded environment for Pandoc code blocks.
 \definecolor{shadecolor}{RGB}{245,245,245}

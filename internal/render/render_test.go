@@ -300,6 +300,30 @@ func TestMetadataArgsIncludesHiddenFigureCaptionFlag(t *testing.T) {
 	}
 }
 
+func TestMetadataArgsIncludesTableStyle(t *testing.T) {
+	cfg := config.Default()
+	cfg.Style.Tables.RowSpacingFactor = 1.35
+	cfg.Style.Tables.ZebraEnabled = true
+	cfg.Style.Tables.ZebraColor = "#EFEFEF"
+
+	args, err := metadataArgs(cfg, "/tmp", false, t.TempDir())
+	if err != nil {
+		t.Fatalf("metadataArgs returned error: %v", err)
+	}
+
+	joined := strings.Join(args, " ")
+	for _, needle := range []string{
+		"table_row_spacing_factor=1.35",
+		"table_zebra_enabled=true",
+		"table_zebra_color_model=HTML",
+		"table_zebra_color_value=EFEFEF",
+	} {
+		if !strings.Contains(joined, needle) {
+			t.Fatalf("expected metadata to contain %q, got %q", needle, joined)
+		}
+	}
+}
+
 func TestMetadataArgsCoverImageImplicitBuiltinMode(t *testing.T) {
 	cfg := config.Default()
 	cfg.Cover.Mode = "none"
@@ -408,6 +432,23 @@ func TestDefaultTemplateDefinesFigureCaptionHooks(t *testing.T) {
 		`\DeclareCaptionFormat{mdtwonoop}{}`,
 		`$if(figure_caption_hidden)$`,
 		`\captionsetup[figure]{format=mdtwonoop,labelformat=empty,labelsep=none,skip=0pt}`,
+	} {
+		if !strings.Contains(defaultTemplate, needle) {
+			t.Fatalf("default template missing %q", needle)
+		}
+	}
+}
+
+func TestDefaultTemplateDefinesTableStyleHooks(t *testing.T) {
+	for _, needle := range []string{
+		`\usepackage[table]{xcolor}`,
+		`\usepackage{etoolbox}`,
+		`\definecolor{mdtwotablezebracolor}{HTML}{F5F5F5}`,
+		`\newcommand{\mdtwoapplytablestyle}{`,
+		`\AtBeginEnvironment{longtable}{\mdtwoapplytablestyle}`,
+		`\AtEndEnvironment{longtable}{\mdtworesettablestyle}`,
+		`$if(table_zebra_enabled)$`,
+		`$if(table_row_spacing_factor)$`,
 	} {
 		if !strings.Contains(defaultTemplate, needle) {
 			t.Fatalf("default template missing %q", needle)

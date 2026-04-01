@@ -224,6 +224,17 @@ func metadataArgs(cfg config.Config, baseDir string, tocEnabled bool, workDir st
 	if !cfg.Style.Figures.CaptionEnabled {
 		pairs = append(pairs, [2]string{"figure_caption_hidden", "true"})
 	}
+	pairs = append(pairs, [2]string{"table_row_spacing_factor", strconv.FormatFloat(cfg.Style.Tables.RowSpacingFactor, 'f', -1, 64)})
+	if cfg.Style.Tables.ZebraEnabled {
+		pairs = append(pairs, [2]string{"table_zebra_enabled", "true"})
+	}
+	if strings.TrimSpace(cfg.Style.Tables.ZebraColor) != "" {
+		model, value := latexColor(cfg.Style.Tables.ZebraColor)
+		pairs = append(pairs, [2]string{"table_zebra_color_value", value})
+		if model != "" {
+			pairs = append(pairs, [2]string{"table_zebra_color_model", model})
+		}
+	}
 	headingStyleEnabled := strings.TrimSpace(cfg.Style.Fonts.Heading) != "" || strings.TrimSpace(cfg.Style.Colors.Primary) != ""
 	type headingStyleLevel struct {
 		key string
