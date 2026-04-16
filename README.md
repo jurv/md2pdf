@@ -98,7 +98,11 @@ md2pdf init --profile report
 
 Configuration is YAML-based and supports cascade merging:
 
-1. global config (`$XDG_CONFIG_HOME/md2pdf/config.yaml` or `~/.config/md2pdf/config.yaml`)
+1. global config:
+   - `--config <path>` if provided
+   - otherwise `filepath.Join(os.UserConfigDir(), "md2pdf", "config.yaml")`
+   - on Linux, this is typically `$XDG_CONFIG_HOME/md2pdf/config.yaml` or `~/.config/md2pdf/config.yaml`
+   - on macOS, this is typically `~/Library/Application Support/md2pdf/config.yaml`
 2. project config (`md2pdf.yaml` or `.md2pdf.yaml` in the working directory)
 3. document front matter
 4. CLI flags (highest priority)

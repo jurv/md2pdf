@@ -18,6 +18,16 @@ Merge behavior:
 - lists replace inherited lists
 - `null` removes an inherited key
 
+Global config lookup order:
+
+1. `--config <path>` if explicitly provided
+2. otherwise: `filepath.Join(os.UserConfigDir(), "md2pdf", "config.yaml")`
+
+Typical locations:
+
+- Linux: `$XDG_CONFIG_HOME/md2pdf/config.yaml` or `~/.config/md2pdf/config.yaml`
+- macOS: `~/Library/Application Support/md2pdf/config.yaml`
+
 ## Example
 
 ```yaml

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -62,5 +63,42 @@ style:
 	}
 	if cfg.Style.Headings.H2.SizePt == nil || *cfg.Style.Headings.H2.SizePt != 18 {
 		t.Fatalf("expected legacy h2_size_pt alias to populate h2.size_pt, got %#v", cfg.Style.Headings.H2.SizePt)
+	}
+}
+
+func TestResolveGlobalConfigPathUsesUserConfigDir(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "md2pdf", "config.yaml")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("failed to create config directory: %v", err)
+	}
+	if err := os.WriteFile(path, []byte("pdf:\n  engine: xelatex\n"), 0o600); err != nil {
+		t.Fatalf("failed to write config file: %v", err)
+	}
+
+	orig := userConfigDir
+	userConfigDir = func() (string, error) { return dir, nil }
+	defer func() { userConfigDir = orig }()
+
+	got, err := resolveGlobalConfigPath("")
+	if err != nil {
+		t.Fatalf("unexpected resolve error: %v", err)
+	}
+	if got != path {
+		t.Fatalf("expected global config path %q, got %q", path, got)
+	}
+}
+
+func TestResolveGlobalConfigPathReturnsEmptyWhenUserConfigDirUnknown(t *testing.T) {
+	orig := userConfigDir
+	userConfigDir = func() (string, error) { return "", errors.New("no config dir") }
+	defer func() { userConfigDir = orig }()
+
+	got, err := resolveGlobalConfigPath("")
+	if err != nil {
+		t.Fatalf("unexpected resolve error: %v", err)
+	}
+	if got != "" {
+		t.Fatalf("expected no global config path, got %q", got)
 	}
 }

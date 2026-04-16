@@ -9,6 +9,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+var userConfigDir = os.UserConfigDir
+
 type LoadOptions struct {
 	GlobalPath  string
 	ProjectPath string
@@ -195,18 +197,11 @@ func resolveGlobalConfigPath(explicit string) (string, error) {
 		return explicit, nil
 	}
 
-	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
-		candidate := filepath.Join(xdg, "md2pdf", "config.yaml")
-		if _, err := os.Stat(candidate); err == nil {
-			return candidate, nil
-		}
-	}
-
-	home, err := os.UserHomeDir()
+	root, err := userConfigDir()
 	if err != nil {
 		return "", nil
 	}
-	candidate := filepath.Join(home, ".config", "md2pdf", "config.yaml")
+	candidate := filepath.Join(root, "md2pdf", "config.yaml")
 	if _, err := os.Stat(candidate); err == nil {
 		return candidate, nil
 	}
