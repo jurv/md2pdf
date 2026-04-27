@@ -22,6 +22,9 @@ var defaultTemplate string
 //go:embed templates/table_code_wrap.lua
 var tableCodeWrapFilter string
 
+//go:embed templates/table_auto_width.lua
+var tableAutoWidthFilter string
+
 //go:embed templates/columns.lua
 var columnsFilter string
 
@@ -91,6 +94,12 @@ func GeneratePDF(ctx context.Context, opts Options) error {
 		}
 	}
 	args = append(args, "--template="+templatePath)
+
+	tableAutoWidthFilterPath, err := writeTableAutoWidthFilter(workDir)
+	if err != nil {
+		return fmt.Errorf("failed to prepare table auto-width filter: %w", err)
+	}
+	args = append(args, "--lua-filter="+tableAutoWidthFilterPath)
 
 	tableCodeWrapFilterPath, err := writeTableCodeWrapFilter(workDir)
 	if err != nil {
@@ -436,6 +445,18 @@ func writeTableCodeWrapFilter(workDir string) (string, error) {
 	}
 	defer tmpFile.Close()
 	if _, err := tmpFile.WriteString(tableCodeWrapFilter); err != nil {
+		return "", err
+	}
+	return tmpFile.Name(), nil
+}
+
+func writeTableAutoWidthFilter(workDir string) (string, error) {
+	tmpFile, err := os.CreateTemp(workDir, "md2pdf-table-auto-width-*.lua")
+	if err != nil {
+		return "", err
+	}
+	defer tmpFile.Close()
+	if _, err := tmpFile.WriteString(tableAutoWidthFilter); err != nil {
 		return "", err
 	}
 	return tmpFile.Name(), nil

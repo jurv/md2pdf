@@ -47,6 +47,7 @@
 \usepackage{array}
 \usepackage{calc}
 \usepackage{etoolbox}
+\usepackage{ragged2e}
 \usepackage{microtype}
 \usepackage{enumitem}
 \usepackage{framed}
@@ -157,11 +158,24 @@ $else$
 $endif$
 
 \newcommand{\mdtworesettablestyle}{%
+  \normalsize%
+  \setlength{\tabcolsep}{6pt}%
   \renewcommand{\arraystretch}{1}%
   \rowcolors{2}{}{}%
+  \let\raggedright\mdtwoorigraggedright%
+  \let\bottomrule\mdtwoorigbottomrule%
 }
 \newcommand{\mdtwoapplytablestyle}{%
+  \small%
+  \setlength{\tabcolsep}{3pt}%
   \renewcommand{\arraystretch}{\mdtwotablerowspacingfactor}%
+  \let\mdtwoorigraggedright\raggedright%
+  \let\raggedright\RaggedRight%
+  \let\mdtwoorigbottomrule\bottomrule%
+  \renewcommand{\bottomrule}{\hiderowcolors\mdtwoorigbottomrule}%
+  \setlength{\emergencystretch}{3em}%
+  \tolerance=4000\relax%
+  \hbadness=10000\relax%
 $if(table_zebra_enabled)$
   \rowcolors{2}{}{mdtwotablezebracolor}%
 $else$

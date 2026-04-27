@@ -87,6 +87,21 @@ func TestEmbeddedTableCodeWrapFilterTargetsTablesOnly(t *testing.T) {
 	}
 }
 
+func TestEmbeddedTableAutoWidthFilterContainsExpectedMarkers(t *testing.T) {
+	for _, needle := range []string{
+		`md2pdf table auto-width filter`,
+		`local function cell_score(compact_len, token_len)`,
+		`local function token_floor(longest)`,
+		`return #tbl.colspecs >= 2`,
+		`local floor_budget = 0.55`,
+		`tbl.colspecs = colspecs`,
+	} {
+		if !strings.Contains(tableAutoWidthFilter, needle) {
+			t.Fatalf("embedded table auto-width filter missing %q", needle)
+		}
+	}
+}
+
 func TestWriteTableCodeWrapFilter(t *testing.T) {
 	workDir := t.TempDir()
 	path, err := writeTableCodeWrapFilter(workDir)
@@ -101,6 +116,24 @@ func TestWriteTableCodeWrapFilter(t *testing.T) {
 		t.Fatalf("failed to read written filter: %v", err)
 	}
 	if string(content) != tableCodeWrapFilter {
+		t.Fatalf("written filter content does not match embedded filter")
+	}
+}
+
+func TestWriteTableAutoWidthFilter(t *testing.T) {
+	workDir := t.TempDir()
+	path, err := writeTableAutoWidthFilter(workDir)
+	if err != nil {
+		t.Fatalf("writeTableAutoWidthFilter returned error: %v", err)
+	}
+	if !strings.HasPrefix(path, workDir) {
+		t.Fatalf("expected filter path %q to be inside %q", path, workDir)
+	}
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read written filter: %v", err)
+	}
+	if string(content) != tableAutoWidthFilter {
 		t.Fatalf("written filter content does not match embedded filter")
 	}
 }
@@ -443,8 +476,13 @@ func TestDefaultTemplateDefinesTableStyleHooks(t *testing.T) {
 	for _, needle := range []string{
 		`\usepackage[table]{xcolor}`,
 		`\usepackage{etoolbox}`,
+		`\usepackage{ragged2e}`,
 		`\definecolor{mdtwotablezebracolor}{HTML}{F5F5F5}`,
 		`\newcommand{\mdtwoapplytablestyle}{`,
+		`\small%`,
+		`\setlength{\tabcolsep}{3pt}%`,
+		`\let\raggedright\RaggedRight%`,
+		`\renewcommand{\bottomrule}{\hiderowcolors\mdtwoorigbottomrule}%`,
 		`\AtBeginEnvironment{longtable}{\mdtwoapplytablestyle}`,
 		`\AtEndEnvironment{longtable}{\mdtworesettablestyle}`,
 		`$if(table_zebra_enabled)$`,
