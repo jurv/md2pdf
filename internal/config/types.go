@@ -132,12 +132,13 @@ type TableStyleConfig struct {
 }
 
 type HeadingStyleConfig struct {
-	H1 HeadingLevelStyleConfig `yaml:"h1"`
-	H2 HeadingLevelStyleConfig `yaml:"h2"`
-	H3 HeadingLevelStyleConfig `yaml:"h3"`
-	H4 HeadingLevelStyleConfig `yaml:"h4"`
-	H5 HeadingLevelStyleConfig `yaml:"h5"`
-	H6 HeadingLevelStyleConfig `yaml:"h6"`
+	KeepWithNext bool                    `yaml:"keep_with_next"`
+	H1           HeadingLevelStyleConfig `yaml:"h1"`
+	H2           HeadingLevelStyleConfig `yaml:"h2"`
+	H3           HeadingLevelStyleConfig `yaml:"h3"`
+	H4           HeadingLevelStyleConfig `yaml:"h4"`
+	H5           HeadingLevelStyleConfig `yaml:"h5"`
+	H6           HeadingLevelStyleConfig `yaml:"h6"`
 }
 
 type HeadingLevelStyleConfig struct {
@@ -287,7 +288,10 @@ func Default() Config {
 			Tables: TableStyleConfig{
 				RowSpacingFactor: 1.2,
 				ZebraEnabled:     true,
-				ZebraColor:       "#F5F5F5",
+				ZebraColor:       "#EAEAEA",
+			},
+			Headings: HeadingStyleConfig{
+				KeepWithNext: true,
 			},
 			BlockQuote: BlockQuoteStyleConfig{
 				BarColor:        "#E6E6E6",

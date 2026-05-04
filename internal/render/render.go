@@ -244,6 +244,9 @@ func metadataArgs(cfg config.Config, baseDir string, tocEnabled bool, workDir st
 			pairs = append(pairs, [2]string{"table_zebra_color_model", model})
 		}
 	}
+	if cfg.Style.Headings.KeepWithNext {
+		pairs = append(pairs, [2]string{"keep_heading_with_next", "true"})
+	}
 	headingStyleEnabled := strings.TrimSpace(cfg.Style.Fonts.Heading) != "" || strings.TrimSpace(cfg.Style.Colors.Primary) != ""
 	type headingStyleLevel struct {
 		key string

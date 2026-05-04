@@ -47,6 +47,7 @@
 \usepackage{array}
 \usepackage{calc}
 \usepackage{etoolbox}
+\usepackage{needspace}
 \usepackage{ragged2e}
 \usepackage{microtype}
 \usepackage{enumitem}
@@ -148,7 +149,7 @@ $else$
 \colorlet{mdtwotablezebracolor}{$table_zebra_color_value$}
 $endif$
 $else$
-\definecolor{mdtwotablezebracolor}{HTML}{F5F5F5}
+\definecolor{mdtwotablezebracolor}{HTML}{EAEAEA}
 $endif$
 
 $if(table_row_spacing_factor)$
@@ -172,7 +173,12 @@ $endif$
   \let\mdtwoorigraggedright\raggedright%
   \let\raggedright\RaggedRight%
   \let\mdtwoorigbottomrule\bottomrule%
-  \renewcommand{\bottomrule}{\hiderowcolors\mdtwoorigbottomrule}%
+  % \noalign{\nobreak} before the bottomrule prevents longtable from breaking
+  % the page between the last body row and the closing rule (which would
+  % otherwise render an empty repeated header on the next page just to host
+  % the rule). \nobreak must be wrapped in \noalign because we are in a
+  % tabular alignment context here.
+  \renewcommand{\bottomrule}{\noalign{\nobreak}\hiderowcolors\mdtwoorigbottomrule}%
   \setlength{\emergencystretch}{3em}%
   \tolerance=4000\relax%
   \hbadness=10000\relax%
@@ -664,6 +670,37 @@ $endif$
 $if(heading_h6_space_after_pt)$
 \titlespacing*{\subparagraph}{0pt}{\mdtwohsixBefore}{\mdtwohsixAfter}
 $endif$
+$endif$
+
+$if(keep_heading_with_next)$
+% Keep each heading on the same page as the content that follows it.
+%
+% Two complementary mechanisms:
+%   1. \Needspace{N\baselineskip} before each section command reserves N
+%      lines at the bottom of the page; if not available, LaTeX breaks the
+%      page early so the heading moves down with its content. Sized to cover
+%      the heading itself plus a substantial first content block.
+%   2. \nobreak (penalty 10000) injected right after each heading via patching
+%      \@afterheading. This binds the heading to whatever follows even when
+%      that block is taller than the reserved \Needspace — useful for images
+%      or longtable rows whose true height isn't predictable.
+\makeatletter
+\AtBeginDocument{%
+  \pretocmd{\section}{\Needspace{8\baselineskip}}{}{}%
+  \pretocmd{\subsection}{\Needspace{8\baselineskip}}{}{}%
+  \pretocmd{\subsubsection}{\Needspace{8\baselineskip}}{}{}%
+  \pretocmd{\paragraph}{\Needspace{6\baselineskip}}{}{}%
+  \pretocmd{\subparagraph}{\Needspace{6\baselineskip}}{}{}%
+  \patchcmd{\@afterheading}{\setbox\z@\lastbox}{\setbox\z@\lastbox\nobreak}{}{}%
+  % Prefix every \includegraphics with \nobreak so a tall image can't be
+  % broken away from the preceding heading: when the image is too large to
+  % fit on the remaining page, LaTeX backtracks past the high penalties to
+  % the last allowed break — typically before the heading — pulling the
+  % heading along onto the next page. \AddToHook is reliable for robust
+  % commands defined by graphicx; etoolbox \pretocmd silently fails on them.
+  \AddToHook{cmd/includegraphics/before}{\nobreak}%
+}
+\makeatother
 $endif$
 
 $if(title)$

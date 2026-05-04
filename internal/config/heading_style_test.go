@@ -51,3 +51,18 @@ func TestHeadingStyleValidationAcceptsPositiveSize(t *testing.T) {
 		t.Fatalf("expected heading style configuration to be valid, got %v", err)
 	}
 }
+
+func TestHeadingStyleDefaultKeepsWithNext(t *testing.T) {
+	cfg := Default()
+	if !cfg.Style.Headings.KeepWithNext {
+		t.Fatalf("expected style.headings.keep_with_next to default to true")
+	}
+}
+
+func TestHeadingStyleAllowsKeepWithNextDisabled(t *testing.T) {
+	cfg := Default()
+	cfg.Style.Headings.KeepWithNext = false
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("expected disabled keep_with_next to validate, got %v", err)
+	}
+}

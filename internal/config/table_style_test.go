@@ -11,8 +11,8 @@ func TestTableStyleDefaults(t *testing.T) {
 	if !cfg.Style.Tables.ZebraEnabled {
 		t.Fatalf("expected zebra striping to be enabled by default")
 	}
-	if cfg.Style.Tables.ZebraColor != "#F5F5F5" {
-		t.Fatalf("expected default zebra color #F5F5F5, got %q", cfg.Style.Tables.ZebraColor)
+	if cfg.Style.Tables.ZebraColor != "#EAEAEA" {
+		t.Fatalf("expected default zebra color #EAEAEA, got %q", cfg.Style.Tables.ZebraColor)
 	}
 }
 
