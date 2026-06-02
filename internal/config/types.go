@@ -554,11 +554,6 @@ func (c *Config) Validate() error {
 	if c.HeaderFooter.FooterReserveAbovePt < 0 {
 		return fmt.Errorf("header_footer.footer_reserve_above_pt must be >= 0")
 	}
-	if !c.HeaderFooter.Enabled {
-		if len(c.HeaderFooter.Header.Grid.Cells) > 0 || len(c.HeaderFooter.Footer.Grid.Cells) > 0 {
-			return fmt.Errorf("header_footer.enabled must be true when header/footer cells are configured")
-		}
-	}
 
 	if c.HeaderFooter.PageNumber.Enabled && strings.TrimSpace(c.HeaderFooter.PageNumber.Format) == "" {
 		return fmt.Errorf("header_footer.page_number.format must not be empty when page numbering is enabled")

@@ -62,9 +62,8 @@ func TestHeaderFooterConfiguredButDisabled(t *testing.T) {
 			},
 		},
 	}
-	err := cfg.Validate()
-	if err == nil || !strings.Contains(err.Error(), "header_footer.enabled must be true") {
-		t.Fatalf("expected explicit enabled error, got %v", err)
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("expected disabled header_footer config to be ignored, got %v", err)
 	}
 }
 

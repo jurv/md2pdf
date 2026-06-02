@@ -61,6 +61,7 @@ func TestDefaultTemplateDefinesStyledQuoteEnvironment(t *testing.T) {
 		`\providecommand{\hl}[1]{#1}`,
 		`\@ifundefined{Shaded}{%`,
 		`\input{$unicode_symbols_partial$}`,
+		`\pagestyle{empty}`,
 		`\renewenvironment{quote}{`,
 		`\newcommand{\mdtwoquotebarcolor}`,
 		`\newcommand{\mdtwoquotetextcolor}`,
