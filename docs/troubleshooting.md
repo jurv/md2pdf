@@ -8,7 +8,7 @@ Run:
 md2pdf doctor
 ```
 
-Install missing required tools (`pandoc`, selected PDF engine, and PlantUML stack if needed).
+Install missing required tools (`pandoc`, selected PDF engine, `pango-view` for faithful emoji image rendering when required, and PlantUML stack if needed).
 
 ## Build fails on PlantUML documents
 

@@ -160,6 +160,10 @@ The front matter schema is identical to the config file schema. The table below 
 | `style.colors.primary`               | string or `null` | empty               | Any string (typically hex color)                                      | Theme fallback color in the embedded template: headings, document title, builtin cover title, and link colors unless a more specific value is set. |
 | `style.fonts.body`                   | string or `null` | empty               | Any string                                                            | Body font in the embedded template under `xelatex`/`lualatex`. Ignored by `pdflatex`.                          |
 | `style.fonts.heading`                | string or `null` | empty               | Any string                                                            | Heading and document-title font in the embedded template under `xelatex`/`lualatex`. Ignored by `pdflatex`.   |
+| `style.emoji.mode`                    | string           | `auto`              | `auto`, `image`, `none`                                               | `auto` renders emoji as inline PNG images through `pango-view` when available, otherwise falls back to the LaTeX/symbol path. `image` requires `pango-view`; `none` disables image rendering. |
+| `style.emoji.font`                    | string           | `Noto Color Emoji 32` | Pango font description                                                | Font description passed to `pango-view` when generating emoji images.                                      |
+| `style.emoji.image_height_em`         | number           | `1.1`               | `> 0`                                                                 | Display height for inline emoji images, relative to current font size.                                      |
+| `style.emoji.image_raise_em`          | number           | `-0.18`             | any number                                                            | Vertical raise applied to inline emoji images, relative to current font size.                               |
 | `style.links.color`                  | string or `null` | empty               | named color or `#RRGGBB`                                              | Global color for internal links. If unset, the embedded template falls back to `style.colors.primary`, then blue. |
 | `style.links.url_color`              | string or `null` | empty               | named color or `#RRGGBB`                                              | Color for URL links. If unset, the embedded template falls back to `style.colors.primary`, then blue.          |
 | `style.links.citation_color`         | string or `null` | empty               | named color or `#RRGGBB`                                              | Color for citation links. If unset, the embedded template falls back to `style.colors.primary`, then blue.     |
@@ -332,34 +336,22 @@ Notes:
 
 With the embedded template, images produced by `pandoc-plantuml` (stored under `plantuml-images/`) can be styled through `style.plantuml.*`. By default they are centered and given a small spacing before the diagram.
 
-### Unicode symbol replacements
+### Emoji and Unicode rendering
 
-With the embedded template, Unicode symbol handling is split into two layers. `style.symbols.fallback_for` routes curated checkbox/symbol characters through a secondary font (`style.symbols.fallback_font`) when the engine supports `fontspec`, while `style.symbols.replace` remains the explicit override mechanism for characters that need a custom LaTeX snippet. This avoids missing-glyph rectangles without requiring color-emoji support.
-
-For inline code and fenced code blocks, md2pdf also normalizes emoji-like aliases when the replacement uses `\mdtwosymbolglyph{...}{...}`. This keeps code samples readable in the monospace font even though verbatim LaTeX does not support the same Unicode fallback mechanism as body text.
-
-Example override:
+The embedded LaTeX backend keeps the existing document layout. In `auto` mode, it renders emoji characters through generated inline PNG images when `pango-view` is available. `md2pdf` detects emoji sequences in normal text, inline code, and fenced code blocks, renders each unique sequence with `pango-view`, and injects the image into the generated LaTeX. This avoids missing-glyph warnings without replacing emoji with approximate monochrome symbols.
 
 ```yaml
 style:
-  symbols:
-    fallback_font: "Noto Sans Symbols2"
-    fallback_for:
-      - "☐"
-      - "☑"
-      - "☒"
-      - "⚠"
-    replace:
-      "✅": '\mdtwosymbolglyph{☑}{\ensuremath{\checkmark}}'
-      "❌": '\textbf{NO}'
+  emoji:
+    mode: auto
+    font: "Noto Color Emoji 32"
+    image_height_em: 1.1
+    image_raise_em: -0.18
 ```
 
-Notes:
+In `auto` mode, md2pdf uses `pango-view` when it is available. If `pango-view` is missing, the build continues with the older LaTeX/symbol fallback path, which is less faithful but portable. Set `style.emoji.mode: image` to require image rendering and fail when `pango-view` is missing, or `style.emoji.mode: none` to disable image rendering. On Debian/Ubuntu, install it with the `pango1.0-tools` package.
 
-- `replace` wins if the same character appears in both `fallback_for` and `replace`.
-- The default configuration strips the emoji variation selector (`U+FE0F`), so sequences like `⚠️` fall back to the base character `⚠`.
-- The default configuration also aliases common checkbox variants used in editors, for example `✅` and `🗹` to `☑`, and `❌` and `🗷` to `☒` inside code blocks.
-- The embedded template targets faithful monochrome symbols, not color emoji.
+`style.symbols.fallback_for` and `style.symbols.replace` remain available for non-emoji technical symbols and explicit LaTeX overrides. They are still useful for arrows, checkboxes, or project-specific substitutions, but they are no longer the primary path for preserving emoji.
 
 ### Full-bleed cover image
 

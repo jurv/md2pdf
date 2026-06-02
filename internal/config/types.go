@@ -96,6 +96,7 @@ type AssetsConfig struct {
 type StyleConfig struct {
 	Colors     ColorsConfig          `yaml:"colors"`
 	Fonts      FontsConfig           `yaml:"fonts"`
+	Emoji      EmojiStyleConfig      `yaml:"emoji"`
 	Links      LinksStyleConfig      `yaml:"links"`
 	Figures    FigureStyleConfig     `yaml:"figures"`
 	Tables     TableStyleConfig      `yaml:"tables"`
@@ -112,6 +113,13 @@ type ColorsConfig struct {
 type FontsConfig struct {
 	Body    string `yaml:"body"`
 	Heading string `yaml:"heading"`
+}
+
+type EmojiStyleConfig struct {
+	Mode          string  `yaml:"mode"`
+	Font          string  `yaml:"font"`
+	ImageHeightEm float64 `yaml:"image_height_em"`
+	ImageRaiseEm  float64 `yaml:"image_raise_em"`
 }
 
 type LinksStyleConfig struct {
@@ -276,6 +284,12 @@ func Default() Config {
 			ApplyOn:  "all_pages",
 		},
 		Style: StyleConfig{
+			Emoji: EmojiStyleConfig{
+				Mode:          "auto",
+				Font:          "Noto Color Emoji 32",
+				ImageHeightEm: 1.1,
+				ImageRaiseEm:  -0.18,
+			},
 			Links: LinksStyleConfig{
 				Color:         "",
 				URLColor:      "",
@@ -323,8 +337,11 @@ func Default() Config {
 					"’":      `'`,
 					"“":      `"`,
 					"”":      `"`,
+					"❔":      `?`,
+					"↑":      `\ensuremath{\uparrow}`,
 					"→":      `\ensuremath{\rightarrow}`,
 					"↔":      `\ensuremath{\leftrightarrow}`,
+					"⇨":      `\mdtwosymbolglyph{→}{\ensuremath{\rightarrow}}`,
 					"•":      `\textbullet`,
 					"🌐":      `\mdtwosymbolglyph{◎}{\textbf{o}}`,
 					"🏁":      `\mdtwosymbolglyph{▶}{\ensuremath{\triangleright}}`,
@@ -332,6 +349,7 @@ func Default() Config {
 					"🐘":      `\mdtwosymbolglyph{●}{\textbullet}`,
 					"💡":      `\mdtwosymbolglyph{✦}{\textasteriskcentered}`,
 					"💻":      `\mdtwosymbolglyph{▤}{\textbullet}`,
+					"🛈":      `\mdtwosymbolglyph{🛈}{\textcircled{i}}`,
 					"📋":      `\mdtwosymbolglyph{☑}{\ensuremath{\checkmark}}`,
 					"📌":      `\mdtwosymbolglyph{▸}{\textbullet}`,
 					"📝":      `\mdtwosymbolglyph{✎}{\textasteriskcentered}`,
@@ -344,11 +362,14 @@ func Default() Config {
 					"🔴":      `\mdtwosymbolglyph{●}{\textbullet}`,
 					"✅":      `\mdtwosymbolglyph{☑}{\ensuremath{\checkmark}}`,
 					"❌":      `\mdtwosymbolglyph{☒}{\ensuremath{\boxtimes}}`,
+					"🎫":      `\mdtwosymbolglyph{▦}{\textbullet}`,
+					"😉":      `;)`,
 					"🗹":      `\mdtwosymbolglyph{☑}{\ensuremath{\checkmark}}`,
 					"🗷":      `\mdtwosymbolglyph{☒}{\ensuremath{\boxtimes}}`,
 					"🗸":      `\mdtwosymbolglyph{✓}{\ensuremath{\checkmark}}`,
 					"🗵":      `\mdtwosymbolglyph{✗}{\ensuremath{\times}}`,
 					"🗄":      `\mdtwosymbolglyph{▤}{\textbullet}`,
+					"🗑":      `\mdtwosymbolglyph{✖}{\ensuremath{\times}}`,
 					"🚀":      `\mdtwosymbolglyph{▶}{\ensuremath{\triangleright}}`,
 					"🚨":      `\mdtwosymbolglyph{⚠}{\textbf{!}}`,
 					"🟠":      `\mdtwosymbolglyph{●}{\textbullet}`,
@@ -503,6 +524,9 @@ func (c *Config) Validate() error {
 	if err := validatePlantUMLStyle(c.Style.PlantUML, "style.plantuml"); err != nil {
 		return err
 	}
+	if err := validateEmojiStyle(c.Style.Emoji, "style.emoji"); err != nil {
+		return err
+	}
 	if err := validateSymbolStyle(c.Style.Symbols, "style.symbols"); err != nil {
 		return err
 	}
@@ -629,6 +653,21 @@ func validatePlantUMLStyle(style PlantUMLStyleConfig, prefix string) error {
 	}
 	if style.SpaceAfterPt < 0 {
 		return fmt.Errorf("%s.space_after_pt must be >= 0", prefix)
+	}
+	return nil
+}
+
+func validateEmojiStyle(style EmojiStyleConfig, prefix string) error {
+	switch style.Mode {
+	case "", "auto", "image", "none":
+	default:
+		return fmt.Errorf("%s.mode must be auto, image, or none", prefix)
+	}
+	if strings.ContainsRune(style.Font, '\n') {
+		return fmt.Errorf("%s.font must be a single-line font description", prefix)
+	}
+	if style.ImageHeightEm <= 0 {
+		return fmt.Errorf("%s.image_height_em must be > 0", prefix)
 	}
 	return nil
 }

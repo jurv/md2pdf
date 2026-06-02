@@ -315,6 +315,22 @@ $endif$
 \ExplSyntaxOff
 \renewcommand{\includegraphics}[2][]{\mdtwoincludegraphicswithplantumlstyle{#1}{#2}}
 
+% Inline emoji images generated from the system font stack.
+$if(emoji_image_height_em)$
+\newcommand{\mdtwoemojiheight}{$emoji_image_height_em$em}
+$else$
+\newcommand{\mdtwoemojiheight}{1.1em}
+$endif$
+$if(emoji_image_raise_em)$
+\newcommand{\mdtwoemojiraise}{$emoji_image_raise_em$em}
+$else$
+\newcommand{\mdtwoemojiraise}{-0.18em}
+$endif$
+\newcommand{\mdtwoemoji}[1]{\raisebox{\mdtwoemojiraise}{\includegraphics[height=\mdtwoemojiheight]{#1}}}
+\newcommand{\mdtwocodespace}{\hspace*{0.6em}}
+\newcommand{\mdtwocodetab}{\hspace*{2.4em}}
+\newenvironment{mdtwoemojicodeblock}{\begin{snugshade}\begingroup\ttfamily\small\raggedright\setlength{\parindent}{0pt}\setlength{\parskip}{0pt}}{\par\endgroup\end{snugshade}}
+
 % Common Unicode fallbacks and symbol replacements for robust PDF generation.
 $if(unicode_symbols_partial)$
 \input{$unicode_symbols_partial$}

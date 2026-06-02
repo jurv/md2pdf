@@ -77,6 +77,10 @@ func buildCodeSymbolNormalizeMap(style config.SymbolStyleConfig) map[string]stri
 			out[symbol] = ""
 			continue
 		}
+		if utf8.RuneCountInString(replacement) == 1 && !strings.ContainsRune(replacement, '\\') {
+			out[symbol] = replacement
+			continue
+		}
 		target, ok := extractSymbolGlyphTarget(replacement)
 		if !ok {
 			continue

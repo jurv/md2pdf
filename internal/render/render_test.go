@@ -1,6 +1,7 @@
 package render
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -642,6 +643,39 @@ func TestCompileUnicodeSymbolPartialIncludesConfiguredMappings(t *testing.T) {
 	}
 }
 
+func TestCompileUnicodeSymbolPartialSupportsArrowAndInfoSymbols(t *testing.T) {
+	partial, err := compileUnicodeSymbolPartial(config.SymbolStyleConfig{
+		FallbackFont: "Noto Sans Symbols2",
+		Replace: map[string]string{
+			"❔": `?`,
+			"↑": `\ensuremath{\uparrow}`,
+			"⇨": `\mdtwosymbolglyph{→}{\ensuremath{\rightarrow}}`,
+			"🗑": `\mdtwosymbolglyph{✖}{\ensuremath{\times}}`,
+			"🛈": `\mdtwosymbolglyph{🛈}{\textcircled{i}}`,
+		},
+	})
+	if err != nil {
+		t.Fatalf("compileUnicodeSymbolPartial returned error: %v", err)
+	}
+
+	for _, needle := range []string{
+		`% U+2754`,
+		`\newunicodechar{❔}{?}`,
+		`% U+2191`,
+		`\newunicodechar{↑}{\ensuremath{\uparrow}}`,
+		`% U+21E8`,
+		`\newunicodechar{⇨}{\mdtwosymbolglyph{→}{\ensuremath{\rightarrow}}}`,
+		`% U+1F5D1`,
+		`\newunicodechar{🗑}{\mdtwosymbolglyph{✖}{\ensuremath{\times}}}`,
+		`% U+1F6C8`,
+		`\newunicodechar{🛈}{\mdtwosymbolglyph{🛈}{\textcircled{i}}}`,
+	} {
+		if !strings.Contains(partial, needle) {
+			t.Fatalf("expected partial to contain %q, got %q", needle, partial)
+		}
+	}
+}
+
 func TestCompileUnicodeSymbolPartialSkipsFallbackEntryWhenExplicitReplacementExists(t *testing.T) {
 	partial, err := compileUnicodeSymbolPartial(config.SymbolStyleConfig{
 		FallbackFont: "Noto Sans Symbols2",
@@ -665,16 +699,22 @@ func TestCompileUnicodeSymbolPartialSkipsFallbackEntryWhenExplicitReplacementExi
 func TestBuildCodeSymbolNormalizeMapExtractsSymbolGlyphTargets(t *testing.T) {
 	mapping := buildCodeSymbolNormalizeMap(config.SymbolStyleConfig{
 		Replace: map[string]string{
+			"❔":      `?`,
 			"✅":      `\mdtwosymbolglyph{☑}{\ensuremath{\checkmark}}`,
 			"💡":      `\mdtwosymbolglyph{✦}{\textasteriskcentered}`,
+			"⇨":      `\mdtwosymbolglyph{→}{\ensuremath{\rightarrow}}`,
+			"🗑":      `\mdtwosymbolglyph{✖}{\ensuremath{\times}}`,
 			"→":      `\ensuremath{\rightarrow}`,
 			"\uFE0F": ``,
 		},
 	})
 
 	for source, expected := range map[string]string{
+		"❔":      "?",
 		"✅":      "☑",
 		"💡":      "✦",
+		"⇨":      "→",
+		"🗑":      "✖",
 		"\uFE0F": "",
 	} {
 		if got, ok := mapping[source]; !ok || got != expected {
@@ -748,5 +788,94 @@ func TestMetadataArgsCoverImageSimpleModeKeepsAllPagesHeaderFooterStart(t *testi
 	}
 	if strings.Contains(joined, "hf_activate_after_cover=true") {
 		t.Fatalf("did not expect hf_activate_after_cover for first-page-background mode, got %q", joined)
+	}
+}
+
+func TestCollectEmojiSequencesFindsEmojiAndJoinedSequences(t *testing.T) {
+	got := collectEmojiSequences("plain 💡 🎫 😉 👨‍💻 ✅ text")
+	for _, expected := range []string{"💡", "🎫", "😉", "👨‍💻", "✅"} {
+		found := false
+		for _, item := range got {
+			if item == expected {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("expected collected emoji sequences to contain %q, got %#v", expected, got)
+		}
+	}
+}
+
+func TestCompileEmojiImageFilterReplacesTextCodeAndCodeBlocks(t *testing.T) {
+	filter, err := compileEmojiImageFilter(map[string]string{
+		"💡":   "/tmp/md2pdf-emoji/light.png",
+		"👨‍💻": "/tmp/md2pdf-emoji/dev.png",
+	})
+	if err != nil {
+		t.Fatalf("compileEmojiImageFilter returned error: %v", err)
+	}
+
+	for _, needle := range []string{
+		`source = utf8.char(0x1F468) .. utf8.char(0x200D) .. utf8.char(0x1F4BB)`,
+		`\\mdtwoemoji{`,
+		`function Meta(meta)`,
+		`function Str(elem)`,
+		`function Code(elem)`,
+		`function CodeBlock(elem)`,
+		`mdtwoemojicodeblock`,
+	} {
+		if !strings.Contains(filter, needle) {
+			t.Fatalf("expected emoji filter to contain %q, got %q", needle, filter)
+		}
+	}
+}
+
+func TestMetadataArgsIncludesEmojiImageStyle(t *testing.T) {
+	cfg := config.Default()
+	cfg.Style.Emoji.ImageHeightEm = 1.25
+	cfg.Style.Emoji.ImageRaiseEm = -0.2
+
+	args, err := metadataArgs(cfg, "/tmp", false, t.TempDir())
+	if err != nil {
+		t.Fatalf("metadataArgs returned error: %v", err)
+	}
+
+	joined := strings.Join(args, " ")
+	for _, needle := range []string{"emoji_image_height_em=1.25", "emoji_image_raise_em=-0.2"} {
+		if !strings.Contains(joined, needle) {
+			t.Fatalf("expected metadata to contain %q, got %q", needle, joined)
+		}
+	}
+}
+
+func TestPrepareEmojiImageFilterAutoSkipsWhenPangoViewIsMissing(t *testing.T) {
+	oldLookPath := emojiLookPath
+	emojiLookPath = func(string) (string, error) { return "", os.ErrNotExist }
+	defer func() { emojiLookPath = oldLookPath }()
+
+	cfg := config.Default()
+	cfg.Style.Emoji.Mode = "auto"
+
+	set, err := prepareEmojiImageFilter(context.Background(), t.TempDir(), []byte("💡"), cfg)
+	if err != nil {
+		t.Fatalf("expected auto mode to skip missing pango-view without error, got %v", err)
+	}
+	if set.FilterPath != "" {
+		t.Fatalf("expected no emoji filter when pango-view is missing in auto mode, got %q", set.FilterPath)
+	}
+}
+
+func TestPrepareEmojiImageFilterImageModeRequiresPangoView(t *testing.T) {
+	oldLookPath := emojiLookPath
+	emojiLookPath = func(string) (string, error) { return "", os.ErrNotExist }
+	defer func() { emojiLookPath = oldLookPath }()
+
+	cfg := config.Default()
+	cfg.Style.Emoji.Mode = "image"
+
+	_, err := prepareEmojiImageFilter(context.Background(), t.TempDir(), []byte("💡"), cfg)
+	if err == nil || !strings.Contains(err.Error(), "pango-view") {
+		t.Fatalf("expected image mode to require pango-view, got %v", err)
 	}
 }

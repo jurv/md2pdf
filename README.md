@@ -27,6 +27,7 @@ Install runtime tools on your machine:
 - `pandoc`
 - a PDF engine (`xelatex`, `lualatex`, or `pdflatex`)
 - optional for diagrams: `pandoc-plantuml`, `plantuml`, `dot`
+- optional for faithful emoji image rendering: `pango-view` (package `pango1.0-tools` on Debian/Ubuntu); without it, `style.emoji.mode: auto` falls back to the older LaTeX/symbol path
 - optional utilities: `pdftk` (merge), `gs` (compress and `build --compress`)
 
 Use `md2pdf doctor` to validate your environment.

@@ -62,7 +62,7 @@ func TestDefaultSymbolStyleIncludesCommonCheckboxes(t *testing.T) {
 			t.Fatalf("expected default symbol fallback set to include %q", symbol)
 		}
 	}
-	for _, symbol := range []string{"💡", "🏁", "📋", "🔍", "🚀", "🚨", "🗹", "🗷", "🗸", "🗵"} {
+	for _, symbol := range []string{"❔", "↑", "⇨", "💡", "🛈", "🏁", "📋", "🔍", "🗑", "🚀", "🚨", "🗹", "🗷", "🗸", "🗵", "🎫", "😉"} {
 		if _, ok := cfg.Style.Symbols.Replace[symbol]; !ok {
 			t.Fatalf("expected default symbol replacements to include %q", symbol)
 		}

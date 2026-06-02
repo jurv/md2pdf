@@ -162,7 +162,7 @@ func runBuild(ctx context.Context, global *GlobalOptions, cmd *cobra.Command, fl
 	enableTOC := render.ShouldEnableTOC(cfg.TOC.Mode, merged, cfg.TOC.FromLevel, cfg.TOC.ToLevel)
 	enablePlantUML := shouldEnablePlantUML(cfg.Features.PlantUML, merged)
 
-	if err := ensureBuildDependenciesFunc(cfg.PDF.Engine, enablePlantUML); err != nil {
+	if err := ensureBuildDependenciesFunc(cfg.PDF.Engine, enablePlantUML, render.ContainsEmoji(merged) && cfg.Style.Emoji.Mode == "image"); err != nil {
 		return dependencyError("dependency check failed", err)
 	}
 

@@ -95,6 +95,14 @@ func GeneratePDF(ctx context.Context, opts Options) error {
 	}
 	args = append(args, "--template="+templatePath)
 
+	emojiImages, err := prepareEmojiImageFilter(ctx, workDir, opts.Markdown, opts.Config)
+	if err != nil {
+		return fmt.Errorf("failed to prepare emoji image filter: %w", err)
+	}
+	if emojiImages.FilterPath != "" {
+		args = append(args, "--lua-filter="+emojiImages.FilterPath)
+	}
+
 	tableAutoWidthFilterPath, err := writeTableAutoWidthFilter(workDir)
 	if err != nil {
 		return fmt.Errorf("failed to prepare table auto-width filter: %w", err)
@@ -173,6 +181,8 @@ func GeneratePDF(ctx context.Context, opts Options) error {
 func metadataArgs(cfg config.Config, baseDir string, tocEnabled bool, workDir string) ([]string, error) {
 	pairs := make([][2]string, 0)
 	pairs = append(pairs, [2]string{"link-citations", "true"})
+	pairs = append(pairs, [2]string{"emoji_image_height_em", strconv.FormatFloat(cfg.Style.Emoji.ImageHeightEm, 'f', -1, 64)})
+	pairs = append(pairs, [2]string{"emoji_image_raise_em", strconv.FormatFloat(cfg.Style.Emoji.ImageRaiseEm, 'f', -1, 64)})
 	if cfg.Metadata.Title != "" {
 		pairs = append(pairs, [2]string{"title", cfg.Metadata.Title})
 	}

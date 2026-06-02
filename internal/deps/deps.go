@@ -38,6 +38,7 @@ func CollectDoctorStatuses(defaultEngine string) []Status {
 		{name: "lualatex", required: defaultEngine == "lualatex", versionArg: []string{"--version"}, probe: true, note: "Optional PDF engine."},
 		{name: "pdflatex", required: defaultEngine == "pdflatex", versionArg: []string{"--version"}, probe: true, note: "Optional PDF engine."},
 		{name: "pandoc-plantuml", required: false, versionArg: nil, probe: false, note: "Required when rendering PlantUML diagrams."},
+		{name: "pango-view", required: false, versionArg: []string{"--version"}, probe: true, note: "Required when rendering emoji as inline images."},
 		{name: "plantuml", required: false, versionArg: []string{"-version"}, probe: true, note: "Required when rendering PlantUML diagrams."},
 		{name: "java", required: false, versionArg: []string{"-version"}, probe: true, note: "Runtime often required by PlantUML."},
 		{name: "dot", required: false, versionArg: []string{"-V"}, probe: true, note: "Graphviz binary used by PlantUML."},
@@ -59,11 +60,14 @@ func CollectDoctorStatuses(defaultEngine string) []Status {
 	return out
 }
 
-func EnsureBuildDependencies(engine string, needsPlantUML bool) error {
+func EnsureBuildDependencies(engine string, needsPlantUML bool, needsEmoji bool) error {
 	required := []string{"pandoc", engine}
 
 	if needsPlantUML {
 		required = append(required, "pandoc-plantuml", "plantuml", "dot")
+	}
+	if needsEmoji {
+		required = append(required, "pango-view")
 	}
 
 	missing := make([]string, 0)

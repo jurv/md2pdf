@@ -141,7 +141,7 @@ func stubBuildPipeline(t *testing.T) func() {
 	oldGenerate := generatePDFFunc
 	oldCompress := compressPDFFunc
 	oldDeps := ensureBuildDependenciesFunc
-	ensureBuildDependenciesFunc = func(string, bool) error { return nil }
+	ensureBuildDependenciesFunc = func(string, bool, bool) error { return nil }
 	return func() {
 		generatePDFFunc = oldGenerate
 		compressPDFFunc = oldCompress
